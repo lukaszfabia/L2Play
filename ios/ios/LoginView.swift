@@ -46,18 +46,10 @@ struct LoginView: View {
         }
     }
 
-    // Funkcja do logowania przez Google
     private func loginWithGoogle() {
-        // Tu dodaj logikę logowania przez Google
-        // Przykładowo, wywołaj Google Sign-In
-        // Zmień isLoggedIn na true po pomyślnym zalogowaniu
     }
 
-    // Funkcja do logowania przez Facebook
-    private func loginWithFacebook() {
-        // Tu dodaj logikę logowania przez Facebook
-        // Zmień isLoggedIn na true po pomyślnym zalogowaniu
-    }
+
 }
 
 #Preview {

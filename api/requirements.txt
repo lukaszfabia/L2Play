@@ -1,0 +1,9 @@
+django
+djangorestframework
+django-cors-headers
+django-rest-passwordreset
+djangorestframework-simplejwt
+python-dotenv
+Pillow
+google-auth 
+google-auth-oauthlib

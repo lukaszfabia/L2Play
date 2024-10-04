@@ -1,16 +1,23 @@
-# app name
+# Chat App
 
-## Backend (REST API)
+[![Django CI](https://github.com/lukaszfabia/chat-app/actions/workflows/django.yml/badge.svg)](https://github.com/lukaszfabia/chat-app/actions/workflows/django.yml)
+[![Swift CI](https://github.com/lukaszfabia/chat-app/actions/workflows/swift.yml/badge.svg)](https://github.com/lukaszfabia/chat-app/actions/workflows/swift.yml)
 
-Server of a iOS moblie app.
+## Description
 
-**Install dependencies:**
+Chat App is a REST API server for an iOS mobile application.
+
+## Installation
+
+To install the required dependencies, run:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Migare tables and date if its needed:
+## Other helpful commands
+
+Migrate tables and date if its needed:
 
 ```bash
 cd api/

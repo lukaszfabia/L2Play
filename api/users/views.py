@@ -9,7 +9,7 @@ from users.serializers import CustomUserSerializer, FriendRequestSerializer
 from users.models import CustomUser
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from serializers import UserValidator
+from users.validator import UserValidator
 
 
 class LoginView(APIView):

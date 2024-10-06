@@ -17,7 +17,7 @@ class CustomUserTest(TestCase):
         )
 
         marrys_email = "marry.jane@example.com"
-        
+
         self.marry = CustomUser.objects.create_user(
             email=marrys_email,
             username=marrys_email,
@@ -78,7 +78,7 @@ class CustomUserTest(TestCase):
         """Test that users can add each other as friends"""
         self.joe.friends.add(self.marry)
         self.assertIn(self.marry, self.joe.friends.all())
-        self.assertNotIn(self.joe, self.marry.friends.all())
+        self.assertIn(self.joe, self.marry.friends.all())
 
     def test_ordering(self):
         """Test users are ordered by last_name and first_name"""

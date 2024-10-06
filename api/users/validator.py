@@ -15,3 +15,21 @@ class UserValidator:
 
         # is email already exists in db = is not valid
         return not CustomUser.objects.filter(email=email).exists()
+
+    @staticmethod
+    def validate_friendship(sender: CustomUser, receiver: CustomUser) -> bool:
+        # we can't add yourself
+        if sender == receiver:
+            return False
+
+        # bad cause we want new friend
+        if sender.friends.filter(id=receiver.id).exists():
+            return False
+
+        # if already sent
+        if sender.received_friend_requests.filter(
+            sender=sender, receiver=receiver, status="pending"
+        ).exists():
+            return False
+
+        return True

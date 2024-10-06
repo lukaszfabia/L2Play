@@ -3,12 +3,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from api import settings
-from users.serializers import RegisterSerializer
+from users.serializers import CustomUserSerializer, FriendRequestSerializer
 from users.models import CustomUser
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from serializers import UserValidator
 
 
 class LoginView(APIView):
@@ -69,19 +70,80 @@ class ContinueWithGoogleView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+    serializer_class = CustomUserSerializer
 
     def post(self, request):
         s = self.serializer_class(data=request.data)
 
-        if s.is_valid():
+        if s.is_valid() and UserValidator.validate_email(s.data["email"]):
             s.save()
             return Response(status=status.HTTP_201_CREATED, data=s.data)
 
         return Response(status=status.HTTP_400_BAD_REQUEST, data=s.errors)
 
 
-class FriendsView(APIView): ...
+class GetFriends(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomUserSerializer
+
+    def get(self, _):
+        user = CustomUser.objects.filter(id=self.request.user.id).first()
+
+        if _status := self.request.GET.get("status"):
+            match _status:
+                case "accepted":
+                    friends = user.friends.all()
+                    return Response(
+                        data=self.serializer_class(friends, many=True).data,
+                        status=status.HTTP_200_OK,
+                    )
+                case _:
+                    req = user.received_friend_requests.filter(status=_status)
+                    return Response(
+                        data=self.serializer_class(req, many=True).data,
+                        status=status.HTTP_200_OK,
+                    )
+
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class FriendRequestsView(APIView): ...
+class SendFriendRequest(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = FriendRequestSerializer
+
+    def post(self, _):
+        sender = CustomUser.objects.filter(id=self.request.user.id).first()
+        receiver = CustomUser.objects.filter(id=self.request.GET.get("id"))
+
+        if receiver is None:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data="There is not user with given ID",
+            )
+
+        data = {
+            "sender": sender,
+            "receiver": receiver,
+        }
+
+        self.serializer_class(data=data)
+
+        if self.serializer_class.is_valid():
+            self.serializer_class.save()
+            return Response(status=status.HTTP_201_CREATED)
+
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ResponseFriendRequest(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomUserSerializer
+
+    def put(self, _): ...
+
+
+class RemoveFromFriend(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomUserSerializer
+
+    def delete(self, _): ...

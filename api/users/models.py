@@ -7,9 +7,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     google_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     profile_image = models.URLField(max_length=200, blank=True, null=True)
-    friends = models.ManyToManyField(
-        "self", symmetrical=False, related_name="friends_of", blank=True
-    )
+    friends = models.ManyToManyField("self", blank=True)
 
     received_friend_requests = models.ManyToManyField(
         "FriendRequest", related_name="receiver_requests", blank=True
@@ -32,13 +30,11 @@ class FriendRequest(models.Model):
         REJECTED = "rejected", "Rejected"
 
     sender = models.ForeignKey(
-        CustomUser,
-        related_name="sent_friend_requests",
-        on_delete=models.CASCADE,
+        CustomUser, related_name="sent_friend_requests", on_delete=models.CASCADE
     )
     receiver = models.ForeignKey(
         CustomUser,
-        related_name="received_friend_requests",
+        related_name="received_friend_requests_set",
         on_delete=models.CASCADE,
     )
     status = models.CharField(

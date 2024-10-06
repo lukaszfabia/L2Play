@@ -6,3 +6,24 @@
 //
 
 import Foundation
+
+final class LoginOptions{
+    
+    public init(){}
+    
+    public func loginWithGoogle(){
+        
+    }
+    
+    public func login(){
+        
+    }
+    
+    public func register(){
+        
+    }
+    
+    public func logout(){
+        
+    }
+}

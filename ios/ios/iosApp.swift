@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct iosApp: App {
+    @StateObject private var provider = AuthProvider()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeView()
+                .environmentObject(provider)
         }
     }
 }

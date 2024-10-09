@@ -7,12 +7,25 @@
 
 import SwiftUI
 
-struct Divider: View {
+struct CustomDivider: View {
+    var text: String?
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        HStack {
+            VStack { Divider().background(Color.primary) }
+            
+            if let text = text {
+                Text(text)
+                    .foregroundColor(Color.primary)
+                    .padding(.horizontal, 8)
+                
+                VStack { Divider().background(Color.primary) }
+            }
+        }
+        .padding(.vertical, 8)
     }
 }
 
 #Preview {
-    Divider()
+    CustomDivider(text : "or")
 }

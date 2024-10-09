@@ -34,6 +34,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "email": instance.email,
             "first_name": instance.first_name,
             "last_name": instance.last_name,
+            "google_id": instance.google_id,
+            "profile_image": instance.profile_image,
         }
 
 

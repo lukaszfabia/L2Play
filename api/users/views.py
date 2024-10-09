@@ -68,20 +68,6 @@ class ContinueWithGoogleView(APIView):
             )
 
 
-class RegisterView(APIView):
-    permission_classes = [AllowAny]
-    serializer_class = CustomUserSerializer
-
-    def post(self, request):
-        s = self.serializer_class(data=request.data)
-
-        if s.is_valid() and UserValidator.validate_email(s.data["email"]):
-            s.save()
-            return Response(status=status.HTTP_201_CREATED, data=s.data)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST, data=s.errors)
-
-
 class GetFriends(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CustomUserSerializer
@@ -147,3 +133,34 @@ class RemoveFromFriend(APIView):
     serializer_class = CustomUserSerializer
 
     def delete(self, _): ...
+
+
+class User(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomUserSerializer
+
+    def get(self, request):
+        user = CustomUser.objects.filter(id=request.user.id).first()
+        if user:
+            serializer = self.serializer_class(user)
+            return Response(status=status.HTTP_200_OK, data=serializer.data)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request):
+        s = self.serializer_class(data=request.data)
+
+        if s.is_valid() and UserValidator.validate_email(s.data["email"]):
+            s.save()
+            return Response(status=status.HTTP_201_CREATED, data=s.data)
+
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=s.errors)
+
+    def delete(self, request):
+        if user := CustomUser.objects.filter(id=request.user.id).first():
+            s = self.serializer_class(user)
+            user.delete()
+            return Response(status=status.HTTP_200_OK, data=s.data)
+
+        return Response(status=status.HTTP_407_PROXY_AUTHENTICATION_REQUIRED)
+
+    def put(self, request): ...

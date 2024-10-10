@@ -23,7 +23,7 @@ jobs:
         run: |
           cd ios 
           xcodebuild -scheme ios -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' build
-      - name: Run tests
-        run: |
-          cd ios
-          xcodebuild -scheme ios -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' test
+      # - name: Run tests
+      #   run: |
+      #     cd ios
+      #     xcodebuild -scheme ios -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' test

@@ -12,7 +12,9 @@ struct UserView: View {
     var user: User
     
     var body: some View {
-        VStack {
+        NavigationStack{
+            
+            /// profile card
             HStack{
                 VStack(alignment: .leading){
                     ZStack{
@@ -60,51 +62,53 @@ struct UserView: View {
                 }
             }
             
-            NavigationStack{
-                HStack{
-                    NavigationLink(destination: ForgotPasswordView()){
-                        HStack{
-                            Button(action: {
-                            }) {
-                                HStack {
-                                    Text("Edit")
-                                        .padding()
-                                        .foregroundColor(Color.primary)
-                                        .frame(maxWidth: .infinity, maxHeight: 40)
-                                        .background(Color.clear)
-                                        .cornerRadius(10)
-                                }
-                            }
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(
-                                        LinearGradient(gradient: Gradient(colors: [.blue, .purple, .red]), startPoint: .leading, endPoint: .trailing), lineWidth: 2
-                                    )
-                                    .cornerRadius(10)
-                            )
-                        }
-                        
+            /// buttons
+            HStack{
+                NavigationLink(destination: EditAccountView()){
+                    HStack {
+                        Text("Edit")
+                            .padding()
+                            .foregroundColor(Color.primary)
+                            .frame(maxWidth: .infinity, maxHeight: 40)
+                            .background(Color.clear)
+                            .cornerRadius(10)
                     }
-                    
-                    NavigationLink(destination: ForgotPasswordView()){
-                        Button(action: {
-                        }) {
-                            Text("Friends")
-                                .padding()
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity, maxHeight: 40)
-                                .background(Color.blue)
-                                .cornerRadius(10)
-                        }.shadow(radius: 10)
-                    }
-                }.padding()
-                CustomDivider()
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(
+                            LinearGradient(gradient: Gradient(colors: [.blue, .purple, .red]), startPoint: .leading, endPoint: .trailing), lineWidth: 2
+                        )
+                        .cornerRadius(10)
+                )
                 
-                VStack(alignment: .leading) {
-                    HStack{
-                        Text("Your new")
-                            .font(.largeTitle)
-                        GradientText(text: "Friends")
+                NavigationLink(destination: FriendsView()) {
+                    Text("Friends")
+                        .padding()
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, maxHeight: 40)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                        .shadow(radius: 10)
+                }
+                
+            }.padding()
+            
+            CustomDivider()
+            
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("Your new")
+                        .font(.largeTitle)
+                    GradientText(text: "Friends")
+                }
+                
+                ScrollView {
+                    VStack(alignment: .leading) {
+                        ForEach(user.friends, id: \.id) { friend in
+                            FriendCard(friend: friend)
+                                .padding(.horizontal)
+                        }
                     }
                 }
             }
@@ -115,15 +119,5 @@ struct UserView: View {
 }
 
 #Preview {
-    let url: URL = URL(string: "https://placebeard.it/250/250")!
-    
-    UserView(user: User(
-        first_name: "Lukasz",
-        last_name: "Fabia",
-        email: "ufabia03@gmail.com",
-        profile_picture: url,
-        friends: [],
-        friend_requests: [],
-        created_at: Date()
-    ))
+    UserView(user: User.dummy())
 }

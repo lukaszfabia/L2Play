@@ -45,18 +45,6 @@ struct HomeView: View {
 
 
 #Preview {
-    let url: URL = URL(string: "https://placebeard.it/250/250")!
-    
-    let user: User = User(
-        first_name: "Lukasz",
-        last_name: "Fabia",
-        email: "ufabia03@gmail.com",
-        profile_picture: url,
-        friends: [],
-        friend_requests: [],
-        created_at: Date()
-    )
-    
     HomeView()
-        .environmentObject(AuthProvider(isAuthenticated: true, tokens: nil, user: user))
+        .environmentObject(AuthProvider(isAuthenticated: true, tokens: nil, user: User.dummy()))
 }

@@ -57,3 +57,21 @@ struct ButtonWithIcon: View {
             }
         }
 }
+
+struct RadioButtonStyle: ButtonStyle {
+    var isSelected: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding()
+            .background(isSelected ? Color.indigo : Color.gray.opacity(0.2))
+            .foregroundColor(.white)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+            )
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0) 
+    }
+}
+

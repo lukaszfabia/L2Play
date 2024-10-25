@@ -34,9 +34,7 @@ struct navigationStack: View {
                     ))
                     
                     
-                    Button(action: {
-                        print("Join to us pressed")
-                    }) {
+                    NavigationLink(destination: RegisterView()) {
                         HStack {
                             Image(systemName: "plus.circle")
                                 .font(.headline)
@@ -77,31 +75,42 @@ struct NotLoggedMenu: View {
     var body: some View {
         NavigationStack{
             VStack {
-                Image("moblie_messages")
-                    .resizable()
-                    .frame(width: 321, height: 295)
-                    .offset(y: 50)
-                
-                  
-                HStack {
-                    Text("App")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.black)
-                    GradientText(text: "name")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .offset(y: 50)
-                
 
+                VStack{
+                    VStack(alignment: .center) {
+                        Text("L")
+                            .font(.system(size: 50))
+                            .fontWeight(.light)
+                            .foregroundStyle(.black)
+                        +
+                        Text("2")
+                            .font(.system(size: 50))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.black)
+                        +
+                        Text("Play")
+                            .font(.system(size: 50))
+                            .fontWeight(.light)
+                            .foregroundStyle(.black)
+                    }
+                    
+                    VStack {
+                        TypingEffect(prompts: ["Rate", "Explore", "Track games"], fontColor: .black)
+                    }.frame(maxWidth: .infinity, maxHeight: 40)
+
+                }
+                .offset(y: 20)
+                .frame(maxWidth: .infinity, maxHeight: 400)
+                
+                
                 ZStack {
                     Color.black
                         .cornerRadius(80)
                     
                     navigationStack()
                 }
-                .offset(y: 55)
+                .offset(y: 50)
+
             }
             .background(.white)
             .padding()

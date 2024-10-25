@@ -21,7 +21,7 @@ struct SettingsView: View {
                 VStack{
                     HStack{
                         VStack(alignment: .leading){
-                            AsyncImage(url: user.profile_picture) { image in
+                            AsyncImage(url: user.profilePicture) { image in
                                 image
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
@@ -36,11 +36,11 @@ struct SettingsView: View {
                         
                         VStack{
                             HStack{
-                                Text(user.first_name)
+                                Text(user.firstName)
                                     .font(.title2)
                                     .bold()
                                 
-                                Text(user.last_name)
+                                Text(user.lastName)
                                     .font(.title2)
                                     .foregroundStyle(Color.secondary)
                             }
@@ -63,7 +63,7 @@ struct SettingsView: View {
                                             Image(systemName: "person.crop.circle")
                                                 .foregroundColor(.blue)
                                             Text("Manage account")
-
+                                            
                                         }
                                     }
                                     NavigationLink(destination: BlockedPeopleView()){

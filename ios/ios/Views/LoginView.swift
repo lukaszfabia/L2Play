@@ -47,38 +47,15 @@ struct LoginView: View {
                 
                 VStack {
                     Section {
-                        HStack {
-                            Image(systemName: "envelope")
-                                .foregroundColor(.gray)
-                                .padding(.leading, 10)
-                            TextField("Email", text: $email)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(12)
-                        }
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                        )
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+                        CustomFieldWithIcon(
+                            acc: email,
+                            placeholder: "Email...",
+                            icon: "envelope")
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
                         
-                        HStack {
-                            Image(systemName: "lock")
-                                .foregroundColor(.gray)
-                                .padding(.leading, 10)
-                            SecureField("Password", text: $password)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(12)
-                        }
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                        )
+                        CustomFieldWithIcon(acc: password, placeholder: "Password...", icon: "lock", isSecure: true)
                     }
                     .padding()
 

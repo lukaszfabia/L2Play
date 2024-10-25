@@ -9,23 +9,30 @@ import SwiftUI
 
 struct GradientText: View {
     var text: String
-    
+    var customFontSize: CGFloat?
+    @State private var isAnimating: Bool = true
+
     var body: some View {
         Text(text)
-            .font(.largeTitle)
+            .font(customFontSize != nil ? .system(size: customFontSize!): .largeTitle)
             .fontWeight(.bold)
             .foregroundColor(.clear)
             .overlay(
                 LinearGradient(
-                    gradient: Gradient(colors: [.blue, .purple, .pink]),
-                    startPoint: .leading,
-                    endPoint: .trailing
+                    gradient: Gradient(colors: isAnimating ? gradientList : gradientList.reversed()),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .mask(
+                    Text(text)
+                        .font(customFontSize != nil ? .system(size: customFontSize!): .largeTitle)
+                        .fontWeight(.bold)
                 )
             )
-            .mask(
-                Text(text)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-            )
+            .onAppear {
+                withAnimation(Animation.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+                    isAnimating.toggle()
+                }
+            }
     }
 }

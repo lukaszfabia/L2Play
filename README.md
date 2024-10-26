@@ -26,7 +26,10 @@ L2Play is simple social media application, which connects people sharing same pa
 - :globe_with_meridians: Account managing
 - :no_entry_sign: User blocking
 - :key: Password restoring
-- :bell: Notifications (?)
+- :gb: Handling other languages based on the locations
+- :triangular_flag_on_post: Censorship of profanity 
+- :bell: Notifications 
+- :bulb: Recomendations
 
 ## Appearance
 

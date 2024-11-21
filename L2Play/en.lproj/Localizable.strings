@@ -1,0 +1,71 @@
+/* 
+  Localizable.strings
+  ios
+
+  Created by Lukasz Fabia on 26/10/2024.
+  
+*/
+
+
+
+"PromptsForNotLoggedMenu_0" = "Rate";
+"PromptsForNotLoggedMenu_1" = "Explore";
+"PromptsForNotLoggedMenu_2" = "Track games";
+
+
+// user view
+
+"Joined" = "Joined: ";
+"Followers" = "Followers: ";
+"Following" = "Following: ";
+
+// settings
+
+"an account" = "an account";
+
+"RemoveAcc" = "Remove account";
+
+"Manage" = "Manage account";
+
+"Actions" = "Actions";
+
+"Blocked" = "Blocked users";
+
+
+"NoteSignUp" = "By signing up, you agree to our Terms of Service and Privacy Policy.";
+
+"NoteSignIn" = "By signing in, you agree to our Terms of Service and Privacy Policy.";
+
+
+"ValidPassword" = "How to create a strong password?";
+
+"ValidPassword0" = "How to create a strong password?";
+"ValidPassword1" = "Min. 8 characters";
+"ValidPassword2" = "Max. 30 characters";
+"ValidPassword3" = "At least one digit";
+"ValidPassword4" = "At least one uppercase letter";
+
+"SignUpWith0" = "Sign up";
+"SignUpWith1" = "with email";
+
+
+"LogInPrompt0" = "Time to get back in the game!";
+"LogInPrompt1" = " Log in to access your account!";
+
+
+"RegisterPrompt" = "Create, review, and share your passion with other gamers. Sign up to start building your game list, reading reviews, and connecting with friends in the gaming community.";
+
+"PasswordRestoringTitle0" = "Password";
+"PasswordRestoringTitle1" = "restoring";
+
+"NoteForPasswordRestoring0" = "Please enter your email address below, and we will send you a PIN to reset your password.";
+
+"NewPasswordPlaceholder" = "New password...";
+
+
+"Recomendations0" = "Recomendations for";
+"Recomendations1" = "you";
+
+
+"DeleteWarn0" = "Sorry to hear that you want to leave us, but you can always restore you account.";
+"DeleteWarn1" = "Please enter your email to confirm operation.";

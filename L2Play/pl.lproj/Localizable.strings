@@ -1,0 +1,177 @@
+/*
+ Localizable.strings
+ ios
+ 
+ Created by Lukasz Fabia on 26/10/2024.
+ 
+ */
+
+// not logged menu
+
+"PromptsForNotLoggedMenu_0" = "Oceniaj";
+"PromptsForNotLoggedMenu_1" = "Odkrywaj";
+"PromptsForNotLoggedMenu_2" = "Śledź gry";
+
+"Continue with Google" = "Kontynuuj z Google";
+
+"Log in" = "Zaloguj się";
+"Join to us!" = "Dołącz do nas!";
+
+
+// user view
+"Followers" = "Obserwujący: ";
+"Following" = "Obserwujesz: ";
+
+"Edit" = "Edytuj";
+
+"Games" = "Gry";
+
+"Joined" = "Dołączono: ";
+
+"Your" = "Twoje";
+
+"Favourites" = "Ulubione";
+"No favourites yet." = "Brak ulubionych gier.";
+
+"Playlist" = "Playlista";
+
+"No games planned to play." = "Brak zaplanowanych gier.";
+
+"My Reviews" = "Moje Recenzje";
+
+"No reviews yet." = "Brak recenzji.";
+
+
+
+// settings
+"Settings" = "Ustawienia";
+
+"an account" = "konto";
+
+"Logout" = "Wyloguj się";
+
+"Remove account" = "Usuń konto";
+
+"Edit profile" = "Edytuj profil";
+
+"Account" = "Konto";
+
+"Actions" = "Działania";
+
+"Blocked users" = "Zablokowani użytkownicy";
+
+
+"NoteSignUp" = "Rejestrując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
+
+"NoteSignIn" = "Logując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
+
+
+"First name" = "Imię";
+
+"Last name" = "Nazwisko";
+
+"Password" = "Hasło";
+
+"Sign up" = "Zarejestruj się";
+
+"Create Account" = "Stwórz Konto";
+
+"ValidPassword" = "Jak stworzyć silne hasło?";
+
+"ValidPassword0" = "Jak stworzyć silne hasło?";
+"ValidPassword1" = "Min. 8 znaków";
+"ValidPassword2" = "Max. 30 znaków";
+"ValidPassword3" = "Przynajmniej jedna cyfra";
+"ValidPassword4" = "Przynajmniej jedna wielka litera";
+
+"Aleardy have an account?" = "Masz już konto?";
+
+
+"SignUpWith0" = "Zarejestruj się";
+"SignUpWith1" = "adresem email";
+
+"or" = "lub";
+
+
+"Welcome" = "Witaj";
+"back" = "z powrotem";
+
+
+"LogInPrompt0" = "Czas wrócić do gry!";
+"LogInPrompt1" = " Zaloguj się, aby uzyskać dostęp do swojego konta!"; // change it
+
+"Don't have an account?" = "Nie masz konta?";
+"Forgot password?" = "Nie pamiętasz hasła?";
+
+
+"RegisterPrompt" = "Twórz, recenzuj i dziel się swoimi pasjami z innymi graczami. Zarejestruj się, aby zacząć tworzyć swoją listę gier, czytać recenzje i łączyć się z przyjaciółmi w społeczności graczy.";
+
+"Restore" = "Odzyskaj";
+
+"Password restoring" = "Odzyskiwanie hasła";
+
+"NoteForPasswordRestoring0" = "Proszę podać swój adres e-mail poniżej, a wyślemy Ci kod PIN do zresetowania hasła.";
+
+"Send an e-mail" = "Wyśli e-mail";
+
+"Now you just need to set a new password" = "Teraz zostało tylko ustawić nowe hasło";
+
+"NewPasswordPlaceholder" = "Nowe hasło...";
+
+"Change" = "Zmień";
+
+"Enter 4 digit code we'll text you on Email" = "Wpisz 4 cyfrowy kod PIN z e-maila";
+
+"Verify your Pin" = "Weryfikacja kodu PIN";
+
+"Verify" = "Zweryfikuj";
+
+
+"Write review" = "Napisz recenzje";
+
+"Rating" = "Ocena";
+
+"Community" = "Gracze";
+
+"Price" ="Cena";
+
+"Popularity" = "Popularność";
+
+"Tags" = "Tagi";
+
+
+"Profile" = "Profil";
+
+"Currently Popular" = "Obecnie Popularne";
+"Recommendations for You" = "Dla ciebie";
+
+
+"Search games" = "Szukaj gier";
+
+"Search..." = "Szukaj...";
+
+"Blocked Users" = "Zablokowani";
+
+"View all the users you have blocked. You can unblock them by clicking button." = "Wgląd do wszystkich twoich zablokowanych użytkowników. Odblokuj klikając przycisk.";
+
+
+"Are you sure to logout?" = "Czy na pewno chcesz się wylogować?";
+"You will be redirected to the login page" = "Aplikacja przekieruje cię do ekranu logowania";
+"Delete Account" = "Usuwanie Konta";
+
+"DeleteWarn0" = "Przykro nam, że nas opuszczasz, ale pamiętaj, że możesz zawsze odzykać swoje konto.";
+"DeleteWarn1" = "Podaj swój email w celu w potwierdzenia swojej operacji.";
+
+"Delete"="Usuń";
+"Explore"="Odkrywaj";
+"Swipe to see more"="Przesuń aby zobaczyć więcej";
+"Edit Account" = "Edycja Konta";
+"Personal informations" = "Informacje osobiste";
+"Who are you?"="Kim jesteś";
+"Login passes"="Dane logowania";
+"Save"="Zapisz";
+
+"Confirm Deletion" = "Potwierdź Usuwanie";
+"Are you sure you want to delete your account? This action cannot be undone." = "Czy jesteś pewny, że chcesz usunąć konto? Ta operacja jest nieodwracalna";
+"Unblock" = "Odblokuj";
+"Game" = "Gra";

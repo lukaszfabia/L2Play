@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct L2PlayApp: App {
+    @StateObject private var provider = AuthViewModel()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
+                .environmentObject(provider)
         }
     }
 }

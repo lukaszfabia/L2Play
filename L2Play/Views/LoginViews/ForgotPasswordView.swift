@@ -32,9 +32,10 @@ struct ForgotPasswordView: View {
                     
                     Section {
                         CustomFieldWithIcon(
-                            acc: email,
+                            acc: $email,
                             placeholder: "Email...",
-                            icon: "envelope"
+                            icon: "envelope",
+                            isSecure: false
                         )
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
@@ -87,7 +88,7 @@ struct PinCodeView: View {
                 
                 
                 
-                CustomFieldWithIcon(acc: newPassword, placeholder: newPassword_, icon: "lock", isSecure: true)
+                CustomFieldWithIcon(acc: $newPassword, placeholder: newPassword_, icon: "lock", isSecure: true)
                     .padding()
                     .autocorrectionDisabled()
                     .keyboardType(.alphabet)

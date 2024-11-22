@@ -48,11 +48,11 @@ struct UserView: View {
                         .padding()
                         
                         VStack(alignment: .leading) {
-                            Text(user.firstName)
+                            Text(user.firstName ?? "unknown")
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                             +
-                            Text(" \(user.lastName)")
+                            Text(" \(user.lastName ?? "user")")
                                 .font(.largeTitle)
                                 .foregroundStyle(.secondary)
                             

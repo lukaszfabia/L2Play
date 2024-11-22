@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct navigationStack: View {
+    @EnvironmentObject private var provider: AuthViewModel
     private let w: CGFloat = 300
     private let h: CGFloat = 35
     
@@ -20,22 +21,22 @@ struct navigationStack: View {
                 
                 VStack(spacing: 30) {
                     Button(action: {
-                        print("Sign in with Google pressed")
+                        provider.continueWithGoogle(presenting: getRootViewController())
                     }) {
                         HStack {
                             Image("google-icon")
                                 .renderingMode(.original)
                                 .resizable()
-                                .frame(width: 24, height: 24)
+                                .frame(width: 40, height: 40)
                             
                             Text("Continue with Google")
                                 .font(.headline)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(Color(hex: 0xE3E3E3))
                         }
                         .frame(width: w, height: h)
                     }
                     .buttonStyle(CustomButton(
-                        buttonColor: Color(.systemGray6)
+                        buttonColor: Color(hex: 0x131314)
                     ))
                     
                     

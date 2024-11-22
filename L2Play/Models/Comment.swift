@@ -16,17 +16,10 @@ struct Comment: Codable, Identifiable {
     static func dummy() -> Comment {
         let url: URL = URL(string: "https://placebeard.it/250/250")!
         return Comment(id: UUID(), createdAt: Date(), comment: "test test tes test testtestss", author: User(
-            id: UUID(),
             firstName: "Joe",
             lastName: "Doe",
             email: "joe.doe@example.com",
-            profilePicture: url,
-            followers: [],
-            following: [],
-            playlist: [],
-            favGames: [],
-            blockedUsers: [],
-            createdAt: Date()
+            avatar: url
         ))
     }
 }

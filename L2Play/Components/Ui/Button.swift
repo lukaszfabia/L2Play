@@ -22,6 +22,7 @@ struct GoogleButton: View {
                 Text("Continue with Google")
             }.frame(maxWidth: 300)
                 .padding()
+                .font(.headline)
                 .background(Color(.systemGray6))
                 .foregroundColor(.primary)
                 .cornerRadius(40)

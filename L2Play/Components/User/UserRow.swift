@@ -19,12 +19,12 @@ struct BlockedUserRow: View {
                 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text(user.firstName)
+                        Text(user.firstName ?? "unknown")
                             .foregroundStyle(.primary)
                             .font(.title3)
                             .fontWeight(.semibold)
                         
-                        Text(user.lastName)
+                        Text(user.lastName ?? "user")
                             .foregroundStyle(.secondary)
                             .font(.title3)
                     }

@@ -43,7 +43,7 @@ struct DeleteAccountView: View {
                 .shadow(radius: 5)
                 .padding(.horizontal)
 
-                CustomFieldWithIcon(acc: email, placeholder: "Email...", icon: "envelope")
+                CustomFieldWithIcon(acc: $email, placeholder: "Email...", icon: "envelope", isSecure: false)
                     .padding(.horizontal)
                 
                 Spacer().frame(height: 20)

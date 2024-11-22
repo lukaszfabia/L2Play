@@ -9,22 +9,23 @@ import SwiftUI
 import Combine
 
 struct CustomFieldWithIcon: View {
-    @State var acc: String
-    let placeholder : String
-    var icon : String = ""
-    var isSecure : Bool?
+    @Binding var acc: String
+    let placeholder: String?
+    var icon: String = ""
+    var isSecure: Bool = false
     
     var body: some View {
-        HStack{
+        HStack {
             Image(systemName: icon)
                 .foregroundColor(.gray)
                 .padding(.leading, 10)
-            if isSecure != nil || isSecure == true {
-                SecureField(placeholder, text: $acc)
+            
+            if isSecure {
+                SecureField(placeholder ?? "", text: $acc)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(12)
             } else {
-                TextField(placeholder, text: $acc)
+                TextField(placeholder ?? "", text: $acc)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(12)
             }
@@ -37,6 +38,7 @@ struct CustomFieldWithIcon: View {
         )
     }
 }
+
 
 
 /// meduim otp field

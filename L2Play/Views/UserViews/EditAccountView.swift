@@ -65,12 +65,12 @@ struct EditAccountView: View {
                         
                         Section(header: Text("Who are you?")
                             .font(.headline).foregroundStyle(.primary)) {
-                                CustomFieldWithIcon(acc: firstName, placeholder: user.firstName, icon: "person")
+                                CustomFieldWithIcon(acc: $firstName, placeholder: user.firstName, icon: "person", isSecure: false)
                                     .keyboardType(.alphabet)
                                     .textInputAutocapitalization(.sentences)
                                 
                                 
-                                CustomFieldWithIcon(acc: lastName, placeholder: user.lastName, icon: "person")
+                                CustomFieldWithIcon(acc: $lastName, placeholder: user.firstName, icon: "person", isSecure: false)
                                     .keyboardType(.alphabet)
                                     .textInputAutocapitalization(.sentences)
                                 
@@ -80,13 +80,13 @@ struct EditAccountView: View {
                         Section(header: Text("Login passes")
                             .font(.headline)
                             .foregroundColor(.primary)){
-                                CustomFieldWithIcon(acc: email, placeholder: "Email", icon: "envelope")
+                                CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
                                     .autocorrectionDisabled()
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
                                 
                                 
-                                CustomFieldWithIcon(acc: password, placeholder: password_, icon: "lock", isSecure: true)
+                                CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
                                     .autocorrectionDisabled()
                                     .keyboardType(.alphabet)
                                     .textInputAutocapitalization(.never)

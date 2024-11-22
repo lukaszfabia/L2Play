@@ -6,15 +6,11 @@
 //
 
 import SwiftUI
-import FirebaseCore
-import FirebaseAuth
-import GoogleSignIn
 
 
 struct LoginView: View {
     @State private var password: String = ""
     @State private var email: String = ""
-    @State private var isLogged: Bool = false
     
     @EnvironmentObject var provider: AuthViewModel
     
@@ -43,6 +39,17 @@ struct LoginView: View {
                     }
                     .padding()
                     
+                    if let err = provider.errorMessage {
+                        VStack {
+                            Text(err)
+                                .font(.title3)
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                                .padding()
+                        }
+                    }
+                    
+                    
                     VStack {
                         Text(loginInBold)
                             .fontWeight(.bold)
@@ -53,16 +60,17 @@ struct LoginView: View {
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.center)
+                    .padding()
                     
                     
                     VStack {
                         Section {
-                            CustomFieldWithIcon(acc: email, placeholder: "Email", icon: "envelope")
+                            CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                             
-                            CustomFieldWithIcon(acc: password, placeholder: password_, icon: "lock", isSecure: true)
+                            CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
@@ -72,7 +80,7 @@ struct LoginView: View {
                         HStack {
                             NavigationLink(destination: ForgotPasswordView()) {
                                 Text("Forgot password?")
-                                    .foregroundStyle(.gray)
+                                    .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
                             }
@@ -81,7 +89,7 @@ struct LoginView: View {
                             
                             NavigationLink(destination: RegisterView()) {
                                 Text("Don't have an account?")
-                                    .foregroundStyle(.gray)
+                                    .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
                             }
@@ -90,64 +98,35 @@ struct LoginView: View {
                         
                         VStack{
                             ButtonWithIcon(color: .accentColor, text: Text("Log in"), icon: "arrow.right") {
-                                // some stuff
+                                provider.login(email: email, password: password)
                             }
                             
                             CustomDivider(text: Text("or"))
                             
                             GoogleButton{
-                                // some stuff
+                                provider.continueWithGoogle(presenting: getRootViewController())
                             }
                         }
                     }
                     .cornerRadius(20)
+                    
+                    Spacer()
                     
                     VStack{
                         Text(note)
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
-                            .padding(.top, 30)
+                            .padding()
                     }
                 }
                 .padding()
                 .navigationTitle("Login")
-                .navigationDestination(isPresented:$isLogged) {
+                .navigationDestination(isPresented:$provider.isAuthenticated) {
                     HomeView()
                 }
             }
         }
-    }
-    
-    private func login() {
-        
-        guard let clientID = FirebaseApp.app()?.options.clientID else { return }
-
-        // Create Google Sign In configuration object.
-        let config = GIDConfiguration(clientID: clientID)
-        GIDSignIn.sharedInstance.configuration = config
-
-        // Start the sign in flow!
-        GIDSignIn.sharedInstance.signIn(withPresenting: getRootViewController()) { result, error in
-          guard error == nil else {
-              print("Błąd podczas logowania Google: \(error!.localizedDescription)")
-            // ...
-              return
-          }
-
-          guard let user = result?.user,
-            let idToken = user.idToken?.tokenString
-          else {
-            // ...
-              return
-          }
-
-            _ = GoogleAuthProvider.credential(withIDToken: idToken,
-                                                         accessToken: user.accessToken.tokenString)
-
-          // ...
-        }
-
     }
 }
 

@@ -32,9 +32,9 @@ struct ReviewRow<Children: View>: View {
                 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text(review.author.firstName)
+                        Text(review.author.firstName ?? "unknown")
                             .font(.headline)
-                        Text(review.author.lastName)
+                        Text(review.author.lastName ?? "user")
                             .font(.headline)
                             .fontWeight(.light)
                             .foregroundStyle(.gray)
@@ -119,7 +119,7 @@ struct AddCommentView: View {
         HStack{
             UserImage(pic: review.author.profilePicture, w: 45, h: 45)
             
-            CustomFieldWithIcon(acc: comment, placeholder: "Comment...", icon: "pencil").frame(maxWidth: .infinity)
+            CustomFieldWithIcon(acc: $comment, placeholder: "Comment...", icon: "pencil", isSecure: false).frame(maxWidth: .infinity)
             
             
             Button(action: {
@@ -149,11 +149,11 @@ struct CommentRow: View {
             }
             VStack(alignment: .leading) {
                 HStack{
-                    Text(comment.author.firstName)
+                    Text(comment.author.firstName ?? "unknown")
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    Text(comment.author.lastName)
+                    Text(comment.author.lastName ?? "user")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -189,7 +189,7 @@ struct CommentsView: View {
                     }
                 }
             }
-            .navigationTitle("\(review.author.firstName)'s review")
+            .navigationTitle("\(String(describing: review.author.firstName))'s review")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

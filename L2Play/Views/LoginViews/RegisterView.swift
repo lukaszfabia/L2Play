@@ -14,8 +14,6 @@ struct RegisterView: View {
     @State private var password: String = ""
     @State private var email : String = ""
     
-    @State private var isLogged: Bool = false
-    
     
     @EnvironmentObject var provider: AuthViewModel
     
@@ -51,7 +49,7 @@ struct RegisterView: View {
                     
                     VStack{
                         GoogleButton{
-                            
+                            provider.continueWithGoogle(presenting: getRootViewController())
                         }
                         
                         CustomDivider(text: Text("or")).padding()
@@ -68,20 +66,20 @@ struct RegisterView: View {
                     
                     VStack {
                         Section {
-                            CustomFieldWithIcon(acc: firstName, placeholder: firstName_, icon: "person")
+                            CustomFieldWithIcon(acc: $firstName, placeholder: firstName_, icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
                             
-                            CustomFieldWithIcon(acc: lastName, placeholder: lastName_, icon: "person")
+                            CustomFieldWithIcon(acc: $lastName, placeholder: lastName_, icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
                             
-                            CustomFieldWithIcon(acc: email, placeholder: "Email", icon: "envelope")
+                            CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                             
-                            CustomFieldWithIcon(acc: password, placeholder: password_, icon: "lock", isSecure: true)
+                            CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
@@ -94,7 +92,7 @@ struct RegisterView: View {
                         HStack {
                             NavigationLink(destination: LoginView()) {
                                 Text("Aleardy have an account?")
-                                    .foregroundStyle(.gray)
+                                    .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
                             }
@@ -107,7 +105,7 @@ struct RegisterView: View {
                     
                     VStack{
                         ButtonWithIcon(color: .accentColor, text: Text("Sign up"), icon: "arrow.right"){
-                            
+                            provider.signUp(email: email, password: password, firstName: firstName, lastName: lastName)
                         }
                     }
                     
@@ -121,7 +119,7 @@ struct RegisterView: View {
                 }
                 .padding()
                 .navigationTitle("Create Account")
-                .navigationDestination(isPresented:$isLogged) {
+                .navigationDestination(isPresented: $provider.isAuthenticated) {
                     HomeView()
                 }
             }

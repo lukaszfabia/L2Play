@@ -20,7 +20,14 @@ struct MainView: View {
     @State private var selectedSideMenuTab = 0
     
     var body: some View {
-        if provider.isAuthenticated, let user = provider.user {
+        if provider.isLoading {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+        }
+        
+        else if provider.isAuthenticated, let user = provider.user {
             TabView{
                 HomeView()
                     .tabItem(){

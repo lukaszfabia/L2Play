@@ -23,11 +23,11 @@ struct SettingsView: View {
                         
                         VStack{
                             HStack{
-                                Text(user.firstName)
+                                Text(user.firstName ?? "unknown")
                                     .font(.title2)
                                     .bold()
                                 
-                                Text(user.lastName)
+                                Text(user.lastName ?? "user")
                                     .font(.title2)
                                     .foregroundStyle(Color.secondary)
                             }
@@ -100,8 +100,6 @@ struct SettingsView: View {
                     .navigationTitle("Settings")
                 }
             }.padding()
-        }.onAppear{
-            self.user = provider.user!
         }
     }
 }

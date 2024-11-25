@@ -46,6 +46,20 @@ class AuthViewModel: ObservableObject {
            }
     }
     
+    func refreshUser(_ user: User) async {
+        do {
+            let fetchedUser: User = try await firebaseManager.read(collection: "users", id: user.email)
+            
+            DispatchQueue.main.async {
+                self.user = fetchedUser
+                self.setInCtx()
+            }
+        } catch let err {
+            print("Failed to refresh user: \(err.localizedDescription)")
+             self.errorMessage = "Failed to refresh user."
+        }
+    }
+    
     
     func deleteAccount(email: String) {
         self.isLoading = true

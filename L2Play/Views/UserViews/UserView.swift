@@ -71,10 +71,14 @@ struct UserView: View {
         .onAppear {
             loadData()
         }
+        .refreshable {
+            loadData()
+        }
     }
 
     private func loadData() {
         Task {
+            await provider.refreshUser(provider.user)
             favs =  await gamesViewModels.fetchFavs(user: provider.user)
             playlist = await gamesViewModels.fetchUsersPlaylist(user: provider.user)
 //            reviews = await gamesViewModels.fetchReviewsForUser(user: provider.user)

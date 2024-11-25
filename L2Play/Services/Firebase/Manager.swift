@@ -162,23 +162,22 @@ class FirebaseManager {
     }
 
     
-    func read<T: Codable & Identifiable>(collection: String, completion: @escaping (Result<[T], Error>) -> Void) {
-        //
-    }
-    
-    func update<T: Codable & Identifiable>(collection: String, id: String, object: T, completion: @escaping (Result<Void, Error>) -> Void) {
-        do {
-            try db.collection(collection).document(id).setData(from: object) { error in
-                if let error = error {
-                    completion(.failure(error))
-                } else {
-                    completion(.success(()))
-                }
-            }
-        } catch let error {
-            completion(.failure(error))
+    func read<T: Codable & Identifiable>(collection: String, id: String) async throws -> T {
+        let snapshot = try await db.collection(collection).document(id).getDocument()
+        
+        guard snapshot.exists, let data = snapshot.data() else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Document not found."])
         }
+
+        let object = try snapshot.data(as: T.self)
+        return object
     }
+
+    
+    func update<T: Codable & Identifiable>(collection: String, id: String, object: T) async throws {
+        try db.collection(collection).document(id).setData(from: object)
+    }
+
     
     func delete(collection: String, id: String, completion: @escaping (Result<Void, Error>) -> Void) {
         db.collection(collection).document(id).delete { error in

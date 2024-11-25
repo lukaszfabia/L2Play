@@ -10,33 +10,41 @@ import Combine
 
 class GameViewModel: ObservableObject {
     @Published var game: Game
-
-    private let firebaseManager: FirebaseManager = FirebaseManager()
-    private var user: User
-
-    init(game: Game, user: User?) {
+    @Published private(set) var user: User
+    @Published var errorMessage: String = ""
+    
+    private let manager: FirebaseManager = FirebaseManager()
+    
+    init(game: Game, user: User) {
         self.game = game
-        self.user = user!
+        self.user = user
     }
-
+    
+    func refreshGame() async {
+        do {
+            self.game = try await manager.read(collection: "game", id: game.id.uuidString)
+        } catch {}
+    }
+    
     func isOnList() -> Bool {
         return user.playlist.contains(game.id)
     }
-
-    func toggleGameState() {
-        if let index = user.playlist.firstIndex(of: game.id) {
-            user.playlist.remove(at: index)
+    
+    func toggleGameState(refreshUser: @escaping (_ user: User) async -> Void) {
+        if isOnList() {
+            //remove from list
+            if let index = user.playlist.firstIndex(of: game.id) {
+                user.playlist.remove(at: index)
+            }
         } else {
             user.playlist.append(game.id)
         }
         
-        firebaseManager.update(collection: "users", id: user.email, object: user) { result in
-            switch result {
-            case .success:
-                break
-            case .failure(let error):
-                print("Failed to update user's games: \(error.localizedDescription)")
-            }
+        
+        Task(priority: .high) {
+            print("witamy w togglegamestate")
+            try await self.manager.update(collection: "users", id: user.email, object: user)
+            await refreshUser(self.user)
         }
     }
 }

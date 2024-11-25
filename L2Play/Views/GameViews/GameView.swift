@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct GameView: View {
+    let generator = UIImpactFeedbackGenerator(style: .light)
     @EnvironmentObject private var provider: AuthViewModel
     @StateObject var gameViewModel: GameViewModel
-    
     @State var isPresentedReviewForm: Bool = false
+    @State private var onlist: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -27,7 +28,7 @@ struct GameView: View {
                     Text(gameViewModel.game.name)
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                    HStack{
+                    HStack {
                         if let year = gameViewModel.game.releaseYear {
                             Text(String(year))
                                 .foregroundStyle(.gray)
@@ -40,10 +41,11 @@ struct GameView: View {
                 
                 HStack(spacing: 20) {
                     Button(action: {
-                        gameViewModel.toggleGameState()
+                        withAnimation {
+                            gameViewModel.toggleGameState(refreshUser: provider.refreshUser)
+                            onlist = gameViewModel.isOnList()
+                        }
                     }) {
-                        let onlist = gameViewModel.isOnList()
-                        
                         Image(systemName: onlist ? "checkmark" : "plus")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
@@ -51,13 +53,12 @@ struct GameView: View {
                             .background(onlist ? Color.green.gradient : Color.accentColor.gradient)
                             .clipShape(Circle())
                             .shadow(
-                                color: onlist ?
-                                    .green.opacity(0.4) :
-                                    .accentColor.opacity(0.4),
+                                color: onlist
+                                ? .green.opacity(0.4)
+                                : .accentColor.opacity(0.4),
                                 radius: 5, x: 0, y: 5
                             )
                     }
-
                     
                     Divider()
                     
@@ -104,132 +105,26 @@ struct GameView: View {
                 .padding(.horizontal, 40)
                 
                 if !gameViewModel.game.reviews.isEmpty {
-                    VStack{
-//                        ForEach(gameViewModel.game.reviews) { review in
-//                            ReviewCard(review: review)
-//                        }
-                    }.padding()
-                }
-            }
-            .sheet(isPresented: $isPresentedReviewForm){
-                ReviewForm()
-            }
-            .navigationTitle("Game")
-        }
-    }
-}
-
-
-
-struct BentoBoxView: View {
-    let game: Game
-    
-    var body: some View {
-        VStack(alignment: .center) {
-            /// popularity and studio
-            HStack (spacing: 5){
-                VStack(alignment: .leading) {
-                    Text("Studio")
-                        .font(.headline)
-                    
-                    Text(game.studio)
-                        .font(.largeTitle)
-                }
-                .padding()
-                .background(.primary.opacity(0.1))
-                .cornerRadius(15)
-                
-                VStack(alignment: .trailing) {
-                    Text("Popularity")
-                        .font(.headline)
-                    GradientText(text: Text("#\(game.popularity)"), customFontSize: .largeTitle)
-                }
-                .padding()
-                .background(.primary.opacity(0.1))
-                .cornerRadius(15)
-            }
-            
-            /// price/community and tags
-            HStack (spacing: 5){
-                VStack(alignment: .leading) {
-                    HStack {
-                        Image(systemName: "star")
-                        Text("Rating")
-                            .font(.headline)
+                    VStack {
+                        //                        ForEach(gameViewModel.game.reviews) { review in
+                        //                            ReviewCard(review: review)
+                        //                        }
                     }
-                    
-                    Text(String(format: "%.2f", game.rating))
-                        .font(.title.bold())
-                        .foregroundStyle(.yellow.gradient)
-                }
-                .padding()
-                .background(.primary.opacity(0.1))
-                .cornerRadius(15)
-                
-                
-                VStack(alignment: .leading) {
-                    HStack {
-                        Image(systemName: "dollarsign")
-                        Text("Price")
-                            .font(.headline)
-                    }
-                    
-                    
-                    if let price = game.price {
-                        Text(String(format: "%.2f", price))
-                            .font(.title)
-                            .fontWeight(.semibold)
-                    } else {
-                        Text("Free")
-                            .font(.title)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.green.gradient)
-                    }
-                }
-                .padding()
-                .background(.primary.opacity(0.1))
-                .cornerRadius(15)
-                
-                VStack(alignment: .trailing) {
-                    HStack {
-                        Image(systemName: "person.2")
-                        Text("Community")
-                            .font(.headline)
-                    }
-                    
-                    Text(game.community.shorterNumber())
-                        .font(.title)
-                        .fontWeight(.semibold)
-                }
-                .padding()
-                .background(.primary.opacity(0.1))
-                .cornerRadius(15)
-            }
-            
-            VStack(alignment: .leading) {
-                HStack{
-                    Image(systemName: "tag.fill")
-                    Text("Tags")
-                        .font(.headline)
-                }
-                FlowLayout(tags: game.tags)
-            }
-            .padding()
-            .background(.primary.opacity(0.1))
-            .cornerRadius(15)
-            
-            
-            HStack{
-                ForEach(game.platform, id: \.self) { p in Text(p)
-                        .padding()
-                        .background(.primary.opacity(0.1))
-                        .cornerRadius(15)
-                        .fontWeight(.semibold)
-                        .font(.title2)
-                    
+                    .padding()
                 }
             }
         }
+        
+        .sheet(isPresented: $isPresentedReviewForm) {
+            ReviewForm()
+        }
+        .onAppear {
+            onlist = gameViewModel.isOnList()
+        }
+        .refreshable {
+            await gameViewModel.refreshGame()
+            await provider.refreshUser(provider.user)
+        }
+        .navigationTitle("Game")
     }
-    
 }

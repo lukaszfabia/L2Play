@@ -47,13 +47,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		F3DF33382CF3426800138A77 /* Exceptions for "L2PlayUseCaseTests" folder in "L2PlayTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				FirebaseManagerTest.swift,
-			);
-			target = F3E343542CEFB30D005EF40A /* L2PlayTests */;
-		};
 		F3E344042CEFBBD3005EF40A /* Exceptions for "L2Play" folder in "L2Play" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -66,9 +59,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F3DF33352CF3423100138A77 /* L2PlayUseCaseTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				F3DF33382CF3426800138A77 /* Exceptions for "L2PlayUseCaseTests" folder in "L2PlayTests" target */,
-			);
 			path = L2PlayUseCaseTests;
 			sourceTree = "<group>";
 		};
@@ -233,7 +223,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1610;
 				TargetAttributes = {
 					F3E343442CEFB30B005EF40A = {
 						CreatedOnToolsVersion = 16.0;
@@ -341,6 +331,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -404,6 +395,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";

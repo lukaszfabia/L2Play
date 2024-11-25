@@ -7,12 +7,29 @@
 
 import SwiftUI
 
+
 struct Item: Identifiable {
     private(set) var id: UUID = .init()
     var color: Color
     var title: String
     var subTitle: String
     var game: Game
+    
+    init(game: Game) {
+        self.title = ""
+        self.subTitle = ""
+        self.game = game
+        self.color = Self.randColor()
+    }
+    
+    private static func randColor() -> Color {
+        let colors: [Color] = [
+            .red, .blue, .accentColor, .green, .yellow, .pink
+        ]
+        
+        
+        return colors[Int.random(in: 0..<colors.count - 1)]
+    }
 }
 
 struct CustomPageSlider<Content: View, TitleContent: View, Item: RandomAccessCollection>: View where Item:MutableCollection, Item.Element: Identifiable {

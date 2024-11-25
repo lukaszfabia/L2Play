@@ -10,26 +10,78 @@ import FirebaseAuth
 import Firebase
 import FirebaseCore
 import GoogleSignIn
+import Combine
 
 
 class AuthViewModel: ObservableObject {
+    private var cancellables = Set<AnyCancellable>()
     private let firebaseManager = FirebaseManager()
+    private let guest = User.dummy()
     
     @Published var isAuthenticated: Bool = false
-    @Published var user: User? = nil
+    @Published var user: User
     @Published var errorMessage: String? = nil
-    @Published var isLoading: Bool = false
+    @Published var isLoading: Bool = false	
     
     
-    init(isAuthenticated: Bool, user: User? = nil) {
+    init(isAuthenticated: Bool, user: User) {
         self.isAuthenticated = isAuthenticated
         self.user = user
     }
+     
+     init() {
+         if let userData = UserDefaults.standard.data(forKey: "currentUser"),
+            let user = try? JSONDecoder().decode(User.self, from: userData) {
+             self.user = user
+             self.isAuthenticated = true
+         } else {
+             self.user = guest
+             self.isAuthenticated = false
+         }
+     }
+    
+    private func setInCtx() {
+        if let userData = try? JSONEncoder().encode(self.user) {
+               UserDefaults.standard.set(userData, forKey: "currentUser")
+           }
+    }
     
     
-    init() {
-        self.isAuthenticated = false
-        self.user = nil
+    func deleteAccount(email: String) {
+        self.isLoading = true
+        
+        // validate email (is it event possible that user can't have email on google ?)
+        if !AuthValidator.compare(providedEmail: email, currentEmail: user.email) {
+            self.isLoading = false
+            self.errorMessage = "Entered email is not the same as your current email."
+            return
+        }
+        
+        
+        // remove from ctx
+        if let fuser = Auth.auth().currentUser {
+            fuser.delete() { error in
+                if let _ = error {
+                    self.errorMessage = "Failed to remove account."
+                    self.isLoading = false
+                } else {
+                    // remove from db
+                    self.firebaseManager.delete(collection: "users", id: email) { result in
+                        switch result {
+                        case .failure:
+                            self.errorMessage = "Failed to remove user."
+                        case .success:
+                            self.user = User.dummy()
+                            self.isAuthenticated = false
+                            UserDefaults.standard.removeObject(forKey: "currentUser")
+                        }
+                        
+                    }
+                    
+                    self.isLoading = false
+                }
+            }
+        }
     }
     
     
@@ -49,6 +101,7 @@ class AuthViewModel: ObservableObject {
                         self.user = user
                         self.isAuthenticated = true
                         self.isLoading = false
+                        self.setInCtx()
                     }
                 }
             }
@@ -58,7 +111,7 @@ class AuthViewModel: ObservableObject {
     
     func signUp(email: String, password: String, firstName: String, lastName: String) {
         self.isLoading = true
-        print("validacja")
+
         // validate email and password
         if !AuthValidator.validate(email: email) {
             self.errorMessage = "Not an email"
@@ -79,7 +132,6 @@ class AuthViewModel: ObservableObject {
         }
         
         
-        print("tworznie usera")
         self.firebaseManager.createUser(email: email, password: password){ res in
             switch res {
             case .failure(let err):
@@ -102,6 +154,7 @@ class AuthViewModel: ObservableObject {
                         self.isLoading = false
                         self.user = user
                         self.isAuthenticated = true
+                        self.setInCtx()
                     }
                     
                 }
@@ -143,7 +196,6 @@ class AuthViewModel: ObservableObject {
                     }
                     
                     self.firebaseManager.getOrCreateUser(user: tmpUser) { result in
-                        self.isLoading = false
                         switch result {
                         case .failure(let error):
                             self.errorMessage = "Failed to auth user: \(error.localizedDescription)"
@@ -151,7 +203,10 @@ class AuthViewModel: ObservableObject {
                         case .success(let user):
                             self.user = user
                             self.isAuthenticated = true
+                            self.setInCtx()
                         }
+                        
+                        self.isLoading = false
                     }
                     
                 case .failure(let error):
@@ -169,9 +224,11 @@ class AuthViewModel: ObservableObject {
         do {
             try firebaseAuth.signOut()
             self.isAuthenticated = false
-            self.user = nil
+            self.user = guest
+            
+            UserDefaults.standard.removeObject(forKey: "currentUser")
         } catch let signOutError as NSError {
-            print("Error signing out: %@", signOutError)
+            self.errorMessage = signOutError.localizedDescription
         }
     }
 }

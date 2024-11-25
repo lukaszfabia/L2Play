@@ -12,7 +12,10 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var email: String = ""
     
+    @State private var translatedText: String = ""
+    
     @EnvironmentObject var provider: AuthViewModel
+//    @EnvironmentObject var t: TranslatorService
     
     private let loginInBold = NSLocalizedString("LogInPrompt0", comment: "")
     private let loginCont = NSLocalizedString("LogInPrompt1", comment: "")

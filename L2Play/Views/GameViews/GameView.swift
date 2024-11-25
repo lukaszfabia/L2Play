@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct GameView: View {
-    var game: Game
+    @EnvironmentObject private var provider: AuthViewModel
+    @StateObject var gameViewModel: GameViewModel
     
     @State var isPresentedReviewForm: Bool = false
     
@@ -16,22 +17,22 @@ struct GameView: View {
         NavigationStack {
             ScrollView {
                 /// main image
-                GalleryView(images: game.pictures)
+                GalleryView(images: gameViewModel.game.pictures)
                     .padding(.top)
                 
                 Spacer(minLength: 20)
                 
                 /// Game title and rating
                 VStack(alignment: .center) {
-                    Text(game.name)
+                    Text(gameViewModel.game.name)
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     HStack{
-                        if let year = game.releaseYear {
+                        if let year = gameViewModel.game.releaseYear {
                             Text(String(year))
                                 .foregroundStyle(.gray)
                         }
-                        Text(game.studio)
+                        Text(gameViewModel.game.studio)
                             .foregroundStyle(.gray)
                     }
                 }
@@ -39,16 +40,24 @@ struct GameView: View {
                 
                 HStack(spacing: 20) {
                     Button(action: {
-                        print("Add to list tapped")
+                        gameViewModel.toggleGameState()
                     }) {
-                        Image(systemName: "plus")
+                        let onlist = gameViewModel.isOnList()
+                        
+                        Image(systemName: onlist ? "checkmark" : "plus")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                             .padding()
-                            .background(Color.accentColor)
+                            .background(onlist ? Color.green.gradient : Color.accentColor.gradient)
                             .clipShape(Circle())
-                            .shadow(color: .accentColor.opacity(0.4), radius: 5, x: 0, y: 5)
+                            .shadow(
+                                color: onlist ?
+                                    .green.opacity(0.4) :
+                                    .accentColor.opacity(0.4),
+                                radius: 5, x: 0, y: 5
+                            )
                     }
+
                     
                     Divider()
                     
@@ -67,7 +76,7 @@ struct GameView: View {
                 
                 Spacer(minLength: 40)
                 
-                BentoBoxView(game: game)
+                BentoBoxView(game: gameViewModel.game)
                 
                 Spacer(minLength: 40)
                 
@@ -94,11 +103,11 @@ struct GameView: View {
                 }
                 .padding(.horizontal, 40)
                 
-                if !game.reviews.isEmpty {
+                if !gameViewModel.game.reviews.isEmpty {
                     VStack{
-                        ForEach(game.reviews) { review in
-                            ReviewCard(review: review)
-                        }
+//                        ForEach(gameViewModel.game.reviews) { review in
+//                            ReviewCard(review: review)
+//                        }
                     }.padding()
                 }
             }
@@ -223,9 +232,4 @@ struct BentoBoxView: View {
         }
     }
     
-}
-
-
-#Preview{
-    GameView(game: Game.dummy())
 }

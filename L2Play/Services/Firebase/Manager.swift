@@ -1,6 +1,6 @@
 //
 //  Manager.swift
-//  ios
+//  L2Play
 //
 //  Created by Lukasz Fabia on 21/11/2024.
 //
@@ -12,7 +12,7 @@ class FirebaseManager {
     private let db = Firestore.firestore()
     
     
-    // Sign in with address email
+    // sign in with address email
     func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>)->Void) {
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
             if authResult?.user != nil {
@@ -123,35 +123,47 @@ class FirebaseManager {
     
     
     
-    func create<T: Codable>(collection: String, object: T, completion: @escaping (Result<Void, Error>) -> Void) {
-        do {
-            let _ = try db.collection(collection).addDocument(from: object) { error in
+    func create<T: Codable>(
+        collection: String,
+        object: T,
+        uniqueField: String,
+        uniqueValue: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        
+        db.collection(collection)
+            .whereField(uniqueField, isEqualTo: uniqueValue)
+            .getDocuments { querySnapshot, error in
                 if let error = error {
                     completion(.failure(error))
+                    return
+                }
+
+                if let documents = querySnapshot?.documents, !documents.isEmpty {
+                    let err = NSError(domain: "", code: 409, userInfo: [NSLocalizedDescriptionKey: "Document with \(uniqueField) '\(uniqueValue)' already exists."])
+                    
+                    completion(
+                        .failure(err)
+                    )
                 } else {
-                    completion(.success(()))
+                    do {
+                        let _ = try self.db.collection(collection).addDocument(from: object) { error in
+                            if let error = error {
+                                completion(.failure(error))
+                            } else {
+                                completion(.success(()))
+                            }
+                        }
+                    } catch let error {
+                        completion(.failure(error))
+                    }
                 }
             }
-        } catch let error {
-            completion(.failure(error))
-        }
     }
+
     
     func read<T: Codable & Identifiable>(collection: String, completion: @escaping (Result<[T], Error>) -> Void) {
-        db.collection(collection).getDocuments { snapshot, error in
-            if let error = error {
-                completion(.failure(error))
-            } else {
-                do {
-                    let objects = try snapshot?.documents.compactMap { document in
-                        try document.data(as: T.self)
-                    } ?? []
-                    completion(.success(objects))
-                } catch let error {
-                    completion(.failure(error))
-                }
-            }
-        }
+        //
     }
     
     func update<T: Codable & Identifiable>(collection: String, id: String, object: T, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -177,4 +189,31 @@ class FirebaseManager {
             }
         }
     }
+    
+    func findAll<T: Codable & Identifiable>(collection: String, ids: [UUID]? = nil) async throws -> [T] {
+        var query: Query = db.collection(collection)
+        
+        if let uids = ids {
+            // no filters
+            if uids.isEmpty {
+                return []
+            }
+            
+            let stringIds = uids.map { $0.uuidString }
+            if !stringIds.isEmpty {
+                query = query.whereField("id", in: stringIds)
+            }
+        }
+        
+        let snapshot = try await query.getDocuments()
+
+        
+        let objects = try snapshot.documents.compactMap { document in
+            try document.data(as: T.self)
+        }
+        
+        return objects
+    }
+
+
 }

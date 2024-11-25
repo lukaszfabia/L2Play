@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct DeleteAccountView: View {
+    @EnvironmentObject private var provider: AuthViewModel
     private let info0 = NSLocalizedString("DeleteWarn0", comment: "")
     private let info1 = NSLocalizedString("DeleteWarn1", comment: "")
+    
     @State private var email: String = ""
     @State private var showConfirmationAlert: Bool = false
 
@@ -62,7 +64,8 @@ struct DeleteAccountView: View {
                         title: Text("Confirm Deletion"),
                         message: Text("Are you sure you want to delete your account? This action cannot be undone."),
                         primaryButton: .destructive(Text("Delete")) {
-                            // delete function goes here...
+                            provider
+                                .deleteAccount(email: email)
                         },
                         secondaryButton: .cancel()
                     )

@@ -144,7 +144,7 @@ struct CommentRow: View {
     
     var body: some View {
         HStack (spacing: 6){
-            NavigationLink(destination: UserView(user: comment.author)) {
+            NavigationLink(destination: UserView()) {
                 UserImage(pic: comment.author.profilePicture, w: 50, h: 50)
             }
             VStack(alignment: .leading) {

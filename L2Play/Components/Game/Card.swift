@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct GameCard: View {
-    var game: Game
+    var gameViewModel: GameViewModel
     
     var body: some View {
-        NavigationLink(destination: GameView(game: game)) {
+        NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {
             HStack(spacing: 12) {
-                GameCover(cover: game.pictures[0])
+                GameCover(cover: gameViewModel.game.pictures[0])
             }
             .cornerRadius(12)
             .shadow(radius: 4)

@@ -16,7 +16,7 @@ struct Game: Codable, Identifiable {
     let description : String
     let popularity: Int
     let community: Int
-    let reviews: [Review]
+    let reviews: [UUID]
     let releaseYear: Int?
     let rating: Double
     let platform: [String]
@@ -33,7 +33,7 @@ struct Game: Codable, Identifiable {
             description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec odio velit, accumsan id erat sed, faucibus tristique lectus. Sed condimentum libero scelerisque tincidunt scelerisque. Nulla venenatis tellus id erat mollis, eget cursus lorem dignissim. Sed luctus hendrerit nisi id molestie. Integer enim lorem, lacinia a dignissim sit amet, ullamcorper et nunc.",
             popularity: 1,
             community: 987654,
-            reviews: [Review.dummy(), Review.dummy()],
+            reviews: [],
             releaseYear: 2009,
             rating: 4.5,
             platform: ["Windows", "MacOS", "Linux"],

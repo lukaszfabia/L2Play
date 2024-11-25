@@ -27,7 +27,9 @@ struct MainView: View {
                 .background(Color(.systemBackground))
         }
         
-        else if provider.isAuthenticated, let user = provider.user {
+        /// model view model view (mvvm)
+        
+        else if provider.isAuthenticated {
             TabView{
                 HomeView()
                     .tabItem(){
@@ -39,7 +41,7 @@ struct MainView: View {
                         Image(systemName: "message.fill")
                         Text("Chat")
                     }
-                UserView(user: user)
+                UserView()
                     .tabItem(){
                         Image(systemName: "person.fill")
                         Text("Profile")

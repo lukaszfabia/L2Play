@@ -7,6 +7,10 @@
 
 class AuthValidator {
     
+    static func compare(providedEmail: String, currentEmail: String) -> Bool {
+        return providedEmail.localizedLowercase.elementsEqual(currentEmail.localizedLowercase)
+    }
+    
     static func validate(names: String...) -> Bool {
         for name in names {
             if name.isEmpty || name.count > 30 {

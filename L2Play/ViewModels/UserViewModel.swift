@@ -9,21 +9,22 @@ import Foundation
 
 class UserViewModel: ObservableObject {
     private let manager: FirebaseManager = FirebaseManager()
+    private var user: User
     
-    @Published var username: String = ""
-    @Published var email: String = ""
+    
+    
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
     
-    func fetchUserData() {
-        
-    }
-
-    func updateUserData(newUsername: String, newEmail: String) {
-  
+    init(user: User){
+        self.user = user
     }
     
-    func loginUser(email: String, password: String) {
-      
+    
+
+    /// Append to users list
+    /// - Parameter uid: user id list
+    func followUser(uid: UUID) {
+        
     }
 }

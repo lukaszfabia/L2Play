@@ -10,15 +10,16 @@ import FirebaseAuth
 
 struct User: Codable, Identifiable {
     var id: UUID = .init()
-    let firstName: String?
-    let lastName: String?
-    let email: String
+    var firstName: String?
+    var lastName: String?
+    var email: String
     let profilePicture: URL?
-    let followers: [User]
-    let following: [User]
-    let playlist: [Game]
-    let favGames: [Game]
-    let blockedUsers: [User]
+    // swap on uuid
+    var followers: [User]
+    var following: [User]
+    var playlist: [UUID]
+    var favGames: [UUID]
+    var blockedUsers: [User]
     let createdAt: Date
     
 
@@ -62,7 +63,7 @@ struct User: Codable, Identifiable {
         self.createdAt = Date()
     }
     
-    init(firstName: String, lastName: String, email: String, avatar: URL, playlist: [Game], favGames: [Game], blockedUsers: [User], followers: [User], following: [User]) {
+    init(firstName: String, lastName: String, email: String, avatar: URL, playlist: [UUID], favGames: [UUID], blockedUsers: [User], followers: [User], following: [User]) {
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
@@ -75,18 +76,10 @@ struct User: Codable, Identifiable {
         self.createdAt = Date()
     }
     
-    // Funkcja do generowania danych testowych
     static func dummy() -> User {
         let url = URL(string: "https://placebeard.it/250/250")!
-        let friend1 = User(
-            firstName: "Marry",
-            lastName: "Jane",
-            email: "marry.jane@example.com",
-            avatar: url
-        )
-        
-        
-        return User(firstName: "Lukasz", lastName: "Fabia", email: "ufabia03@gmail.com", avatar: url, playlist: [], favGames: [], blockedUsers: dummyFriends(), followers: [friend1], following: [])
+    
+        return User(firstName: "guest", lastName: "guest@example.com", email: "", avatar: url, playlist: [], favGames: [], blockedUsers: [], followers: [], following: [])
     }
     
   

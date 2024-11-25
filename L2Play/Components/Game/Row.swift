@@ -8,19 +8,19 @@
 import SwiftUI
 
 struct GameRow: View {
-    var game: Game
+    var gameViewModel: GameViewModel
     
     var body: some View {
-        NavigationLink(destination: GameView(game: game)) {
+        NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {
             VStack {
                 HStack(spacing: 20) {
                     ZStack(alignment: .topLeading) {
-                        GameCover(cover: game.pictures[0])
+                        GameCover(cover: gameViewModel.game.pictures[0])
                         
                         HStack (spacing: 1) {
                             Text("#").font(.subheadline)
                                 .fontWeight(.light)
-                            Text("\(game.popularity)")
+                            Text("\(gameViewModel.game.popularity)")
                         }.font(.headline)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -33,23 +33,23 @@ struct GameRow: View {
                     
                     VStack(alignment: .leading, spacing: 5) {
                         HStack(spacing: 4) {
-                            Text(game.community.shorterNumber())
+                            Text(gameViewModel.game.community.shorterNumber())
                                 .font(.headline)
                                 .bold()
                         }
                         
-                        Text(game.name)
+                        Text(gameViewModel.game.name)
                             .font(.title2)
                             .foregroundStyle(.primary)
                             .lineLimit(2)
                             .truncationMode(.tail)
                         
-                        Text(game.studio)
+                        Text(gameViewModel.game.studio)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
                         
-                        RatingComponent(rating: game.rating, reviewsAmount: 34)
+                        RatingComponent(rating: gameViewModel.game.rating, reviewsAmount: 34)
                     }
                     .padding(.vertical, 8)
                     
@@ -66,33 +66,33 @@ struct GameRow: View {
 }
 
 struct FavoriteGamesRow: View {
-    @State var game: Game
+    var gameViewModel: GameViewModel
     
     var body: some View {
-        NavigationLink(destination: GameView(game: game)) {
+        NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {
             VStack {
                 HStack(spacing: 20) {
-                    GameCover(cover: game.pictures[0])
+                    GameCover(cover: gameViewModel.game.pictures[0])
                     
                     
                     VStack(alignment: .leading, spacing: 5) {
                         HStack (spacing: 10) {
-                            RatingComponent(rating: game.rating)
+                            RatingComponent(rating: gameViewModel.game.rating)
                             
                         }.padding(.bottom, 5)
                         
-                        Text(game.name)
+                        Text(gameViewModel.game.name)
                             .font(.headline)
                             .foregroundStyle(.primary)
                             .lineLimit(2)
                             .truncationMode(.tail)
                         
                         HStack(spacing: 5) {
-                            Text(game.studio)
+                            Text(gameViewModel.game.studio)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
-                            if let y = game.releaseYear {
+                            if let y = gameViewModel.game.releaseYear {
                                 Text("|").foregroundStyle(.secondary).font(.subheadline)
                                 Text("\(y, specifier: "%d")")
                                     .font(.subheadline.bold())

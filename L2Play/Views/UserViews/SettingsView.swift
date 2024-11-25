@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var provider : AuthViewModel
-    @State var user: User = User.dummy()
     
     @State private var showDeleteView: Bool = false
     @State private var showLogoutAlert: Bool = false
@@ -19,20 +18,20 @@ struct SettingsView: View {
             VStack(alignment: .leading){
                 VStack{
                     HStack{
-                        UserImage(pic: user.profilePicture, w: 100, h: 100)
+                        UserImage(pic: provider.user.profilePicture, w: 100, h: 100)
                         
                         VStack{
                             HStack{
-                                Text(user.firstName ?? "unknown")
+                                Text(provider.user.firstName ?? "unknown")
                                     .font(.title2)
                                     .bold()
                                 
-                                Text(user.lastName ?? "user")
+                                Text(provider.user.lastName ?? "user")
                                     .font(.title2)
                                     .foregroundStyle(Color.secondary)
                             }
                             
-                            Text(user.email)
+                            Text(provider.user.email)
                                 .foregroundStyle(.blue)
                         }.padding(.horizontal, 10)
                     }
@@ -45,7 +44,7 @@ struct SettingsView: View {
                             Section(header: Text("Account")
                                 .font(.headline)
                                 .foregroundColor(.primary)) {
-                                    NavigationLink(destination: EditAccountView(user: user)){
+                                    NavigationLink(destination: EditAccountView(user: provider.user)){
                                         HStack {
                                             Image(systemName: "person.crop.circle")
                                                 .foregroundColor(.blue)
@@ -53,7 +52,7 @@ struct SettingsView: View {
                                             
                                         }
                                     }
-                                    NavigationLink(destination: BlockedPeopleView(user: user)){
+                                    NavigationLink(destination: BlockedPeopleView(user: provider.user)){
                                         HStack {
                                             Image(systemName: "nosign")
                                                 .foregroundColor(.red)

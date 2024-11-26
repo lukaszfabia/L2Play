@@ -7,15 +7,44 @@
 
 import Foundation
 
+/// Represents review
 struct Review: Codable, Identifiable {
     private(set) var id: UUID = .init()
     let createdAt: Date
+    let updatedAt: Date
     let review: String
     let rating: Int
-    let author: User
-    let comments: [Comment]
+    var author: Author
+    let gameID: UUID
+    var likes: Int
+    var dislikes: Int
+    let commentsIDs: [UUID]
     
-    static func dummy() -> Review {
-        return Review(id: UUID(), createdAt: Date(), review: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec odio velit, accumsan id erat sed, faucibus tristique lectus. Sed condimentum libero scelerisque tincidunt scelerisque. Nulla venenatis tellus id erat mollis, eget cursus lorem dignissim. Sed luctus hendrerit nisi id molestie. Integer enim lorem, lacinia a dignissim sit amet, ullamcorper et nunc.", rating: 8, author: User.dummy(), comments: [Comment.dummy(),Comment.dummy(),Comment.dummy(),Comment.dummy()])
+    // when its created
+    init(review: String, rating: Int, gameID: UUID, author: Author) {
+        self.id = .init()
+        self.createdAt = Date()
+        self.updatedAt = Date()
+        self.review = review
+        self.rating = rating
+        self.gameID = gameID
+        self.commentsIDs = []
+        self.author = author
+        self.dislikes = 0
+        self.likes = 0
+    }
+    
+    // when its updated
+    init(oldReview: Review) {
+        self.createdAt = oldReview.createdAt
+        self.id = oldReview.id
+        self.commentsIDs = oldReview.commentsIDs
+        self.rating = oldReview.rating
+        self.updatedAt = Date()
+        self.gameID = oldReview.gameID
+        self.review = oldReview.review
+        self.author = oldReview.author
+        self.likes = oldReview.likes
+        self.dislikes = oldReview.dislikes
     }
 }

@@ -9,7 +9,7 @@ import Foundation
 
 class UserViewModel: ObservableObject {
     private let manager: FirebaseManager = FirebaseManager()
-    private var user: User
+    @Published private var user: User
     
     
     
@@ -26,5 +26,9 @@ class UserViewModel: ObservableObject {
     /// - Parameter uid: user id list
     func followUser(uid: UUID) {
         
+    }
+    
+    func fetchReviewsForUser(user: User) -> [Review] {
+        return []
     }
 }

@@ -133,7 +133,7 @@ struct LoginView: View {
     }
 }
 
-#Preview {
-    LoginView().environmentObject(AuthViewModel())
-}
+//#Preview {
+//    LoginView().environmentObject(AuthViewModel())
+//}
 

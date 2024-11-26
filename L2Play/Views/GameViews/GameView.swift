@@ -11,8 +11,11 @@ struct GameView: View {
     let generator = UIImpactFeedbackGenerator(style: .light)
     @EnvironmentObject private var provider: AuthViewModel
     @StateObject var gameViewModel: GameViewModel
-    @State var isPresentedReviewForm: Bool = false
+    @State private var isPresentedReviewForm: Bool = false
     @State private var onlist: Bool = false
+    @State private var fav: Bool = false
+    
+    
     
     var body: some View {
         NavigationStack {
@@ -45,6 +48,8 @@ struct GameView: View {
                             gameViewModel.toggleGameState(refreshUser: provider.refreshUser)
                             onlist = gameViewModel.isOnList()
                         }
+                        generator.prepare()
+                        generator.impactOccurred()
                     }) {
                         Image(systemName: onlist ? "checkmark" : "plus")
                             .font(.system(size: 20))
@@ -63,15 +68,20 @@ struct GameView: View {
                     Divider()
                     
                     Button(action: {
-                        print("Favorite tapped")
+                        withAnimation(){
+                            gameViewModel.toogleFavGameState(refreshUser: provider.refreshUser)
+                            fav = gameViewModel.isFav()
+                        }
+                        generator.prepare()
+                        generator.impactOccurred()
                     }) {
                         Image(systemName: "heart.fill")
                             .font(.system(size: 20))
-                            .foregroundColor(.white)
+                            .foregroundColor(fav ? .red : .white)
                             .padding()
-                            .background(Color.red)
+                            .background(fav ? Color.white.gradient: Color.red.gradient)
                             .clipShape(Circle())
-                            .shadow(color: .red.opacity(0.4), radius: 5, x: 0, y: 5)
+                            .shadow(color: fav ? .white.opacity(0.4) : .red.opacity(0.4), radius: 5, x: 0, y: 5)
                     }
                 }
                 
@@ -103,12 +113,13 @@ struct GameView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                 }
                 .padding(.horizontal, 40)
+                .padding(.bottom, 20)
                 
-                if !gameViewModel.game.reviews.isEmpty {
-                    VStack {
-                        //                        ForEach(gameViewModel.game.reviews) { review in
-                        //                            ReviewCard(review: review)
-                        //                        }
+                if !gameViewModel.reviews.isEmpty {
+                    LazyVStack {
+                        ForEach(gameViewModel.reviews) { review in
+                            ReviewCard(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game, review: review)).id(review.id)
+                        }
                     }
                     .padding()
                 }
@@ -116,10 +127,20 @@ struct GameView: View {
         }
         
         .sheet(isPresented: $isPresentedReviewForm) {
-            ReviewForm()
+            ReviewForm(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game), closeForm: $isPresentedReviewForm)
+                .onDisappear {
+                    Task {
+                        await gameViewModel.fetchReviewsForGame()
+                    }
+                }
         }
         .onAppear {
             onlist = gameViewModel.isOnList()
+            fav = gameViewModel.isFav()
+            
+            Task {
+                await gameViewModel.fetchReviewsForGame()
+            }
         }
         .refreshable {
             await gameViewModel.refreshGame()

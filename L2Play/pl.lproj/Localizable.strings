@@ -175,3 +175,9 @@
 "Are you sure you want to delete your account? This action cannot be undone." = "Czy jesteś pewny, że chcesz usunąć konto? Ta operacja jest nieodwracalna";
 "Unblock" = "Odblokuj";
 "Game" = "Gra";
+"Create Review"="Napisz Recenzję";
+"Remember to be honest and respectful and avoid using offensive language."="Pamiętaj aby być szczerym, odnosić się z szacunkiem do innych i nie używać ofensywnego języka.";
+
+"Choose your rating for game." = "Przyznaj od gwiadki grze.";
+"Star rating (1-5)" = "Oceny w gwiazdkach (1-5)";
+"Submit review" = "Opublikuj";

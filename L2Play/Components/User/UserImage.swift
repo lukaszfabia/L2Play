@@ -29,7 +29,9 @@ struct UserImage: View {
             Circle()
                 .fill(Color.gray.opacity(0.2))
                 .frame(width: w, height: h)
-                .overlay(Text("No profile picture").foregroundColor(.gray))
+                .overlay(Text("No profile picture")
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center))
         }
     }
 }

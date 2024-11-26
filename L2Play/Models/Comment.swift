@@ -7,19 +7,20 @@
 
 import Foundation
 
+/// Represents comment
 struct Comment: Codable, Identifiable {
     private(set) var id: UUID = .init()
+    private let reviewID: UUID
     let createdAt: Date
     let comment: String
-    let author: User
+    let author: Author
     
-    static func dummy() -> Comment {
-        let url: URL = URL(string: "https://placebeard.it/250/250")!
-        return Comment(id: UUID(), createdAt: Date(), comment: "test test tes test testtestss", author: User(
-            firstName: "Joe",
-            lastName: "Doe",
-            email: "joe.doe@example.com",
-            avatar: url
-        ))
+    
+    init(id: UUID, reviewID: UUID, comment: String, author: Author) {
+        self.id = id
+        self.reviewID = reviewID
+        self.createdAt = Date()
+        self.comment = comment
+        self.author = author
     }
 }

@@ -47,6 +47,9 @@ struct DeleteAccountView: View {
 
                 CustomFieldWithIcon(acc: $email, placeholder: "Email...", icon: "envelope", isSecure: false)
                     .padding(.horizontal)
+                    .keyboardType(.emailAddress)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
                 
                 Spacer().frame(height: 20)
                 

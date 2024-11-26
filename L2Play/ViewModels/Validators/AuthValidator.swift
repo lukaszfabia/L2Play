@@ -6,12 +6,24 @@
 //
 
 class AuthValidator {
+    private let firstName: String
+    private let lastName : String
+    private let email: String
+    private let password: String
+    
+    init(firstName: String, lastName: String, email: String, password: String) {
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+        self.password = password
+    }
+    
     
     static func compare(providedEmail: String, currentEmail: String) -> Bool {
         return providedEmail.localizedLowercase.elementsEqual(currentEmail.localizedLowercase)
     }
     
-    static func validate(names: String...) -> Bool {
+    private func validate(names: String...) -> Bool {
         for name in names {
             if name.isEmpty || name.count > 30 {
                 return false
@@ -22,14 +34,14 @@ class AuthValidator {
     }
     
     
-    static func validate(password: String) -> Bool {
+    private func validate(password: String) -> Bool {
         if password.isEmpty {
             return false
         }
         
         do {
             let reg = try Regex(#"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\^$*.\[\]{}()?\"!@#%&/\\,><':;|_~])[A-Za-z\d\^$*.\[\]{}()?\"!@#%&/\\,><':;|_~]{6,4096}$"#)
-
+            
             let isValid = try reg.firstMatch(in: password) != nil
             
             return isValid
@@ -38,7 +50,7 @@ class AuthValidator {
         }
     }
     
-    static func validate(email: String) -> Bool {
+    private func validate(email: String) -> Bool {
         if email.count > 100 || email.count < 3  || email.isEmpty{
             return false
         }
@@ -50,6 +62,23 @@ class AuthValidator {
         } catch {
             return false
         }
+    }
+    
+    
+    func validateSignUp() -> Bool {
+        if !validate(email: self.email) {
+            return false
+        }
+        
+        if !validate(password: self.password) {
+            return false
+        }
+        
+        if !validate(names: self.firstName, self.lastName) {
+            return false
+        }
+        
+        return true
     }
     
     

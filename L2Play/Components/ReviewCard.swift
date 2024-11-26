@@ -3,127 +3,195 @@
 //  ios
 //
 //  Created by Lukasz Fabia on 20/10/2024.
-//
+
 
 import SwiftUI
 
 let RATING_RANGE: Int = 5
 
-struct ReviewRow<Children: View>: View {
-    let review: Review
-    let children: () -> Children
+struct ReviewRow<ReactionBar: View, CommentSection: View, AddComment: View>: View {
+    @Binding var review: Review?
     
-    @ViewBuilder var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                AsyncImage(url: review.author.profilePicture) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                        .shadow(radius: 12)
-                } placeholder: {
-                    ProgressView()
-                        .frame(width: 50, height: 50)
+    @ViewBuilder var reactionBar: () -> ReactionBar
+    @ViewBuilder var addComment: () -> AddComment
+    @ViewBuilder var commentSection: () -> CommentSection
+    
+    var body: some View {
+        if let review = review {
+            VStack(alignment: .leading) {
+                
+                HStack {
+                    UserImage(pic: review.author.profilePicture)
+                    
+                    Divider()
+                    
+                    VStack(alignment: .leading) {
+                        Text(review.author.name)
+                            .font(.headline)
+                        
+                        Text(review.createdAt.timeAgoSinceDate())
+                            .foregroundStyle(.gray)
+                            .font(.caption)
+                    }
+                }
+                
+                
+                HStack {
+                    Text("\(review.rating)")
+                        .font(.title)
+                    +
+                    Text("/\(RATING_RANGE)")
+                        .foregroundStyle(.gray)
+                    
+                    Image(systemName: "star.fill")
+                }
+                
+                
+                if !review.review.isEmpty {
+                    VStack {
+                        Text(review.review)
+                    }
+                    .padding(.top, 5)
                 }
                 
                 Divider()
+                    .padding(.vertical, 5)
+                    .background(.clear)
                 
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text(review.author.firstName ?? "unknown")
-                            .font(.headline)
-                        Text(review.author.lastName ?? "user")
-                            .font(.headline)
-                            .fontWeight(.light)
-                            .foregroundStyle(.gray)
-                    }
-                    
-                    Text(review.createdAt.timeAgoSinceDate())
-                        .foregroundStyle(.gray)
-                        .font(.caption)
+                HStack(spacing: 6) {
+                    reactionBar()
                 }
+                .padding(.horizontal, 5)
+                
+                VStack(spacing: 10) {
+                    addComment()
+                    commentSection()
+                }
+                .padding(.bottom, 20)
             }
-            
-            HStack {
-                Text("\(review.rating)")
-                    .font(.title)
-                +
-                Text("/\(RATING_RANGE)")
-                    .foregroundStyle(.gray)
-                
-                Image(systemName: "star")
-            }
-            
-            VStack {
-                Text(review.review)
-            }
-            .padding(.top, 5)
-            
-            Divider().padding(5).background(.clear)
-            HStack (spacing: 6){
-                Image(systemName: "message")
-                Text("12")
-                
-                Spacer()
-                
-                Image(systemName: "heart")
-                Text("12")
-                
-                Image(systemName: "arrow.down")
-                Text("12")
-                
-            }.padding(.horizontal, 5)
-            
-            Spacer().padding(.bottom, 10)
-            
-            VStack(alignment: .leading) {
-                children()
-            }
+            .padding()
         }
-        .padding()
     }
 }
 
-
 struct ReviewCard: View {
-    let review: Review
+    private let generator = UIImpactFeedbackGenerator(style: .light)
+    @StateObject var reviewViewModel: ReviewViewModel
     @State private var isPresentedCommentsView = false
     
     var body: some View {
-        ReviewRow(review: review) {
-            Button(action: {
-                isPresentedCommentsView.toggle()
-            }) {
-                // there is nothing
+        if let review = reviewViewModel.review {
+            ReviewRow(
+                review: $reviewViewModel.review,
+                reactionBar: {
+                    HStack {
+                        Button(action: {
+                            isPresentedCommentsView.toggle()
+                            makeBrr()
+                        }) {
+                            Image(systemName: "message")
+                            Text("\(review.commentsIDs.count.shorterNumber())")
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            // 
+                            makeBrr()
+                        }) {
+                            Image(systemName: "heart")
+                            Text("\(review.likes.shorterNumber())")
+                        }
+                        
+                        Button(action: {
+                            //
+                            makeBrr()
+                        }) {
+                            Image(systemName: "hand.thumbsdown")
+                            Text("\(review.dislikes.shorterNumber())")
+                        }
+                    }
+                },
+                addComment: {},
+                commentSection: {}
+            )
+            .cornerRadius(15)
+            .sheet(isPresented: $isPresentedCommentsView) {
+                NavigationView {
+                    ScrollView {
+                        ReviewRow(
+                            review: $reviewViewModel.review,
+                            reactionBar: {
+                                HStack {
+                                    Button(action: {}) {
+                                        Image(systemName: "message")
+                                        Text("\(review.commentsIDs.count.shorterNumber())")
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        //
+                                        makeBrr()
+                                    }) {
+                                        Image(systemName: "heart")
+                                        Text("\(review.likes.shorterNumber())")
+                                    }
+                                    
+                                    Button(action: {
+                                        //
+                                        makeBrr()
+                                    }) {
+                                        Image(systemName: "hand.thumbsdown")
+                                        Text("\(review.dislikes.shorterNumber())")
+                                    }
+                                }
+                            },
+                            addComment: {
+                                AddCommentView(reviewViewModel: reviewViewModel)
+                            },
+                            commentSection: {
+                                ForEach(reviewViewModel.comments) { comment in
+                                    CommentRow(comment: comment)
+                                }
+                            }
+                        )
+                    }
+                    .navigationTitle("\(String(describing: review.author.name.takeFirstWord()))'s review")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Close") {
+                                isPresentedCommentsView = false
+                            }
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, 40)
         }
-        .cornerRadius(15)
-        .onTapGesture {
-            isPresentedCommentsView.toggle()
-        }
-        .sheet(isPresented: $isPresentedCommentsView) {
-            CommentsView(review: review)
-        }
+    }
+    
+    private func makeBrr(){
+        generator.prepare()
+        generator.impactOccurred()
     }
 }
 
 
 struct AddCommentView: View {
+    @EnvironmentObject private var provider: AuthViewModel
     @State private var comment: String = ""
-    let review : Review
+    @StateObject var reviewViewModel: ReviewViewModel
     
-    var body:some View {
-        HStack{
-            UserImage(pic: review.author.profilePicture, w: 45, h: 45)
+    var body: some View {
+        HStack {
+            UserImage(pic: provider.user.profilePicture , w: 45, h: 45)
             
-            CustomFieldWithIcon(acc: $comment, placeholder: "Comment...", icon: "pencil", isSecure: false).frame(maxWidth: .infinity)
-            
+            CustomFieldWithIcon(acc: $comment, placeholder: "Comment...", icon: "pencil", isSecure: false)
+                .frame(maxWidth: .infinity)
+                .textInputAutocapitalization(.sentences)
             
             Button(action: {
-                print("submit comment: \(comment)")
+                print("Submit comment: \(comment)")
                 comment = ""
             }) {
                 HStack {
@@ -140,63 +208,26 @@ struct AddCommentView: View {
 }
 
 struct CommentRow: View {
-    let comment : Comment
+    let comment: Comment
     
     var body: some View {
-        HStack (spacing: 6){
-            NavigationLink(destination: UserView()) {
-                UserImage(pic: comment.author.profilePicture, w: 50, h: 50)
-            }
+        HStack(spacing: 6) {
+            UserImage(pic: comment.author.profilePicture)
+            
             VStack(alignment: .leading) {
-                HStack{
-                    Text(comment.author.firstName ?? "unknown")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Text(comment.author.lastName ?? "user")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                Text(comment.author.name)
+                    .font(.headline)
+                
                 Text(comment.createdAt.timeAgoSinceDate())
                     .foregroundStyle(.gray)
                     .font(.caption)
                 
                 Text(comment.comment)
                     .foregroundStyle(.primary)
-            }.padding()
+            }
+            .padding()
             
             Spacer()
         }
     }
-}
-
-struct CommentsView: View {
-    let review: Review
-    
-    var body: some View {
-        NavigationView {
-            ScrollView(.vertical) {
-                VStack {
-                    ReviewRow(review: review){
-                        VStack(spacing: 10) {
-                            AddCommentView(review: review)
-                            ForEach(review.comments, id: \.id) { comment in
-                                CommentRow(comment: comment)
-                                    .id(comment.id)
-                            }
-                        }
-                        .padding(.bottom, 20)
-                    }
-                }
-            }
-            .navigationTitle("\(String(describing: review.author.firstName))'s review")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-
-
-#Preview {
-    ReviewCard(review: Review.dummy())
 }

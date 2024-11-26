@@ -22,7 +22,7 @@ class GamesViewModel: ObservableObject {
     @MainActor
     func fetchGames(ids: [UUID]? = nil) async -> [Game] {
         do {
-            self.games = try await self.manager.findAll(collection: "games", ids: ids)
+            self.games = try await self.manager.findAll(collection: .games, ids: ids)
             return self.games
         } catch {
             self.errorMessage = error.localizedDescription
@@ -40,14 +40,5 @@ class GamesViewModel: ObservableObject {
         let games = await fetchGames(ids: user.favGames)
         
         return games.map {Item(game: $0)}
-    }
-    
-    
-    func fetchReviewsForGame(game: Game) -> [Review] {
-        return []
-    }
-    
-    func fetchReviewsForUser(user: User) -> [Review] {
-        return []
     }
 }

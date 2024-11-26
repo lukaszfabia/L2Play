@@ -62,24 +62,28 @@ struct PriceComponent: View {
 }
 
 struct FlowLayout: View {
-    let tags: [Tag]
+    let tags: [String]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(0..<tags.count, id: \.self) { i in
-                if i % 4 == 0 {
-                    HStack {
-                        ForEach(i..<min(i+4, tags.count), id: \.self) { tagIndex in
-                            Text(tags[tagIndex].name)
-                                .font(.caption)
-                                .padding(.horizontal, 15)
-                                .padding(.vertical, 10)
-                                .background(Color.gray.opacity(0.2))
-                                .cornerRadius(15)
-                        }
+            /// chunking for 4 elems
+            ForEach(Array(tags.chunked(into: 4)).indices, id: \.self) { rowIndex in
+                HStack {
+                    ForEach(tags.chunked(into: 4)[rowIndex], id: \.self) { tag in
+                        Text(tag)
+                            .font(.caption)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 10)
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(15)
                     }
                 }
             }
         }
     }
+}
+
+
+#Preview() {
+    FlowLayout(tags: ["jebac", "disa"])
 }

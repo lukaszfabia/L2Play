@@ -12,7 +12,7 @@ struct BlockedUserRow: View {
     let s: CGFloat = 75 // sizes
     var body : some View {
         HStack {
-            NavigationLink(destination: ReadOnlyUserView(user: User.dummy())) {
+            NavigationLink(destination: ReadOnlyUserView(email: user.email)) {
                 UserImage(pic: user.profilePicture, w: s, h: s)
                 
                 Spacer()

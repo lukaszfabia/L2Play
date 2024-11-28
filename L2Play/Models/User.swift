@@ -15,11 +15,11 @@ struct User: Codable, Identifiable {
     var email: String
     let profilePicture: URL?
     // swap on uuid
-    var followers: [User]
-    var following: [User]
+    var followers: [UUID]
+    var following: [UUID]
     var playlist: [UUID]
     var favGames: [UUID]
-    var blockedUsers: [User]
+    var blockedUsers: [UUID]
     let createdAt: Date
     
 
@@ -63,7 +63,7 @@ struct User: Codable, Identifiable {
         self.createdAt = Date()
     }
     
-    init(firstName: String, lastName: String, email: String, avatar: URL, playlist: [UUID], favGames: [UUID], blockedUsers: [User], followers: [User], following: [User]) {
+    init(firstName: String, lastName: String, email: String, avatar: URL, playlist: [UUID], favGames: [UUID], blockedUsers: [UUID], followers: [UUID], following: [UUID]) {
         self.firstName = firstName
         self.lastName = lastName
         self.email = email

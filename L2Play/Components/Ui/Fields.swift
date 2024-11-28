@@ -16,9 +16,11 @@ struct CustomFieldWithIcon: View {
     
     var body: some View {
         HStack {
-            Image(systemName: icon)
-                .foregroundColor(.gray)
-                .padding(.leading, 10)
+            if !icon.isEmpty {
+                Image(systemName: icon)
+                    .foregroundColor(.gray)
+                    .padding(.leading, 10)
+            }
             
             if isSecure {
                 SecureField(placeholder ?? "", text: $acc)

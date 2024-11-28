@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct GameView: View {
-    let generator = UIImpactFeedbackGenerator(style: .light)
     @EnvironmentObject private var provider: AuthViewModel
     @StateObject var gameViewModel: GameViewModel
     @State private var isPresentedReviewForm: Bool = false
@@ -48,8 +47,7 @@ struct GameView: View {
                             gameViewModel.toggleGameState(refreshUser: provider.refreshUser)
                             onlist = gameViewModel.isOnList()
                         }
-                        generator.prepare()
-                        generator.impactOccurred()
+                        HapticManager.shared.generateHapticFeedback(style: .light)
                     }) {
                         Image(systemName: onlist ? "checkmark" : "plus")
                             .font(.system(size: 20))
@@ -72,8 +70,7 @@ struct GameView: View {
                             gameViewModel.toogleFavGameState(refreshUser: provider.refreshUser)
                             fav = gameViewModel.isFav()
                         }
-                        generator.prepare()
-                        generator.impactOccurred()
+                        HapticManager.shared.generateHapticFeedback(style: .light)
                     }) {
                         Image(systemName: "heart.fill")
                             .font(.system(size: 20))
@@ -95,25 +92,26 @@ struct GameView: View {
                 Button(action: {
                     isPresentedReviewForm.toggle()
                 }) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "doc.text")
-                            .resizable()
-                            .frame(width: 17, height: 17)
-                        
-                        Text("Write review")
-                            .font(.headline)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .foregroundColor(.primary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 25)
-                            .stroke(Color.primary, lineWidth: 2)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                    
+                    Text("Write review")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .foregroundColor(.primary)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(Color.primary, lineWidth: 2)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 25))
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 20)
+                
+                if !gameViewModel.errorMessage.isEmpty {
+                    Text(gameViewModel.errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.headline.bold())
+                }
                 
                 if !gameViewModel.reviews.isEmpty {
                     LazyVStack {
@@ -127,7 +125,7 @@ struct GameView: View {
         }
         
         .sheet(isPresented: $isPresentedReviewForm) {
-            ReviewForm(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game), closeForm: $isPresentedReviewForm)
+            ReviewForm(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game), updateGameRating: gameViewModel.updateGameRating, closeForm: $isPresentedReviewForm)
                 .onDisappear {
                     Task {
                         await gameViewModel.fetchReviewsForGame()

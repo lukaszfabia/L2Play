@@ -21,11 +21,12 @@ struct UserView: View {
     @State private var selectedTab = 0
     @State private var isSettingsPresented = false
     
+    
     var body: some View {
         NavigationStack {
             ScrollView(.vertical) {
                 VStack {
-                    ProfileHeaderView()
+                    ProfileHeaderView(user: provider.user, followSection: {EmptyView()})
                     
                     CustomDivider()
                     

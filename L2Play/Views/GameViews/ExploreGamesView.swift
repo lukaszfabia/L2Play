@@ -73,14 +73,9 @@ struct ExploreGamesView: View {
         }
         .onAppear {
             Task {
-                let _ = await gamesViewModel.fetchGames()
+                await gamesViewModel.fetchGames()
                 //            gamesViewModel.fetchRecommendations()
             }
         }
     }
-}
-
-
-#Preview {
-    ExploreGamesView()
 }

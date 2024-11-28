@@ -49,7 +49,7 @@ struct GameRow: View {
                             .foregroundColor(.secondary)
                         
                         
-                        RatingComponent(rating: gameViewModel.game.rating, reviewsAmount: 34)
+                        RatingComponent(rating: gameViewModel.game.rating)
                     }
                     .padding(.vertical, 8)
                     
@@ -82,7 +82,7 @@ struct FavoriteGamesRow: View {
                         }.padding(.bottom, 5)
                         
                         Text(gameViewModel.game.name)
-                            .font(.headline)
+                            .font(.subheadline)
                             .foregroundStyle(.primary)
                             .lineLimit(2)
                             .truncationMode(.tail)

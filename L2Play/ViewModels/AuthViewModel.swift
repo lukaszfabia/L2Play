@@ -45,19 +45,15 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    @MainActor
     func refreshUser(_ user: User) async {
         do {
             let fetchedUser: User = try await self.manager.read(collection: .users, id: user.email)
-            
-            DispatchQueue.main.async {
-                self.user = fetchedUser
-                self.setInCtx()
-            }
+            self.user = fetchedUser
+            self.setInCtx()
         } catch let err {
             print("Failed to refresh user: \(err.localizedDescription)")
-            DispatchQueue.main.async {
-                self.errorMessage = "Failed to refresh user."
-            }
+            self.errorMessage = "Failed to refresh user."
         }
     }
     
@@ -244,6 +240,36 @@ class AuthViewModel: ObservableObject {
             UserDefaults.standard.removeObject(forKey: "currentUser")
         } catch let signOutError as NSError {
             self.errorMessage = signOutError.localizedDescription
+        }
+    }
+    
+    @MainActor
+    func followUser(_ u: User) async {
+        var otherUser: User
+        
+        do {
+            otherUser = try await manager.read(collection: .users, id: u.email)
+        } catch {
+            self.errorMessage = "User does not exist"
+            return
+        }
+        
+        // remove from both lists
+        if otherUser.following.contains(user.id) {
+            otherUser.following.removeAll(where: { $0 == user.id })
+            user.followers.removeAll(where: { $0 == otherUser.id })
+        }
+        // append
+        else {
+            otherUser.following.append(user.id)
+            user.followers.append(otherUser.id)
+        }
+        
+        do {
+            try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
+            try await self.manager.update(collection: .users, id: user.email, object: user)
+        } catch {
+            self.errorMessage = "Failed to follow"
         }
     }
 }

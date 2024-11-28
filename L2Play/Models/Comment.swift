@@ -16,8 +16,7 @@ struct Comment: Codable, Identifiable {
     let author: Author
     
     
-    init(id: UUID, reviewID: UUID, comment: String, author: Author) {
-        self.id = id
+    init(reviewID: UUID, comment: String, author: Author) {
         self.reviewID = reviewID
         self.createdAt = Date()
         self.comment = comment

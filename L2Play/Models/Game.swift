@@ -14,10 +14,10 @@ struct Game: Codable, Identifiable {
     let tags: [String]
     let pictures: [URL]
     let description : String
-    let popularity: Int
-    let community: Int
+    var popularity: Int
+    var community: Int
     let releaseYear: Int?
-    let rating: Double
+    var rating: Double
     let platform: [String]
     let multiplayerSupport: Bool
     let price: Double?

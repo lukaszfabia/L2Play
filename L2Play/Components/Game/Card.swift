@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct GameCard: View {
-    var gameViewModel: GameViewModel
+    let gameViewModel: GameViewModel
     
     var body: some View {
         NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {

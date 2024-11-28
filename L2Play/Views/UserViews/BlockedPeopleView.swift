@@ -18,11 +18,11 @@ struct BlockedPeopleView: View {
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                 }.padding()
-                VStack{
-                    ForEach(user.blockedUsers, id: \.id) { blocked in
-                        BlockedUserRow(user: blocked)
-                    }
-                }
+//                VStack{
+//                    ForEach(user.blockedUsers, id: \.id) { blocked in
+//                        BlockedUserRow(user: blocked)
+//                    }
+//                }
                 .padding(.top, 10)
                 .navigationTitle("Blocked Users")
             }

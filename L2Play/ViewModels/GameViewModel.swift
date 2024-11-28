@@ -16,11 +16,18 @@ class GameViewModel: ObservableObject {
     
     private let manager: FirebaseManager = FirebaseManager()
     
+    var popularity: Int {
+        ///
+        return 0 
+    }
+    
+    @MainActor
     init(game: Game, user: User) {
         self.game = game
         self.user = user
     }
     
+    @MainActor
     func refreshGame() async {
         do {
             self.game = try await manager.read(collection: .games, id: game.id.uuidString)
@@ -71,6 +78,43 @@ class GameViewModel: ObservableObject {
         } catch let err {
             self.errorMessage = "Failed to fetch reviews: \(err.localizedDescription)"
             return
+        }
+    }
+    
+    @MainActor
+    func updateGameRating() async {
+        // sum r.rating * (like - dislike) / len reviews
+        var result: Double = 0
+        let DEFAULT_POWER = 0.1
+        
+        
+        if reviews.isEmpty {
+            return
+        }
+        
+        for review in reviews {
+            let dislikes = Double(review.dislikes.count)
+            let likes = Double(review.likes.count)
+            let rating = Double(review.rating)
+            
+            // check if diff is bigger than 5
+            if dislikes != 0 && likes != 0 && abs(dislikes - likes) > 5 {
+                let power = likes / (likes + dislikes)
+                result += power * rating
+            } else {
+                result += DEFAULT_POWER * rating
+            }
+        }
+        
+        result = result < 0 ? 0 : result / Double(reviews.count)
+        
+        
+        self.game.rating = result
+        
+        do {
+            try await manager.update(collection: .games, id: game.id.uuidString, object: game)
+        } catch {
+            self.errorMessage = "Failed to update"
         }
     }
 }

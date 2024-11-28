@@ -7,8 +7,10 @@
 
 import SwiftUI
 
-struct ProfileHeaderView: View {
-    @EnvironmentObject var provider: AuthViewModel
+struct ProfileHeaderView<FollowSection: View>: View {
+    let user: User
+    
+    @ViewBuilder var followSection: () -> FollowSection
     
     var body: some View {
         HStack {
@@ -19,17 +21,17 @@ struct ProfileHeaderView: View {
                         .frame(width: 105, height: 105)
                         .shadow(radius: 12)
                     
-                    UserImage(pic: provider.user.profilePicture, w: 100, h: 100)
+                    UserImage(pic: user.profilePicture, w: 100, h: 100)
                 }
             }
             .padding()
             
             VStack(alignment: .leading) {
-                Text(provider.user.firstName ?? "unknown")
+                Text(user.firstName ?? "unknown")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 +
-                Text(" \(provider.user.lastName ?? "user")")
+                Text(" \(user.lastName ?? "user")")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
                 
@@ -37,17 +39,17 @@ struct ProfileHeaderView: View {
                     .foregroundStyle(.secondary)
                     .fontWeight(.light)
                 +
-                Text(34534.shorterNumber())
+                Text(user.followers.count.shorterNumber())
                     .bold()
                 
                 Text("Following")
                     .foregroundStyle(.secondary)
                     .fontWeight(.light)
                 +
-                Text(12412.shorterNumber())
+                Text(user.following.count.shorterNumber())
                     .bold()
                 
-                if let res = provider.user.createdAt.getMonthAndYear() {
+                if let res = user.createdAt.getMonthAndYear() {
                     Text("Joined")
                         .foregroundStyle(.secondary)
                         .fontWeight(.light)
@@ -56,6 +58,10 @@ struct ProfileHeaderView: View {
                     Text(res)
                         .bold()
                 }
+                
+                Spacer()
+                
+                followSection()
             }
         }
     }

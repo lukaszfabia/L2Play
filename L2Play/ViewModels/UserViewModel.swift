@@ -8,50 +8,76 @@
 import Foundation
 
 @MainActor
-class UserViewModel: ObservableObject {
+class UserViewModel: ObservableObject, AsyncOperationHandler {
     private let manager: FirebaseManager = FirebaseManager()
+    
     @Published var user: User? = nil
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
+
     
-    init(user: User) {
+    init(user: User? = nil) {
         self.user = user
     }
     
-    init(){}
+    func isAuth(_ email: String) -> Bool {
+        guard let user else { return false }
+        return email == user.email
+    }
     
-    func fetchUserByEmail(_ email: String) async {
-        self.isLoading = true
-        do {
-            let fetchedUser: User = try await manager.read(collection: .users, id: email)
+    func fetchUserByEmail(_ email: String) async -> User? {
+        let result: Result<User, Error> = await performAsyncOperation {
+            try await self.manager.read(collection: .users, id: email)
+        }
+        
+        switch result {
+        case .success(let fetchedUser):
             self.user = fetchedUser
-            print(fetchedUser)
-            self.isLoading = false
-        } catch {
-            self.errorMessage = "Error fetching user: \(error)"
+            return fetchedUser
+        case .failure(let error):
+            self.errorMessage = "Error fetching user: \(error.localizedDescription)"
             print("\(error.localizedDescription)")
-            self.isLoading = false
+            return nil
         }
     }
     
     func refreshUser() async {
-        guard let user else { return }
-        do {
-            let fetchedUser: User = try await self.manager.read(collection: .users, id: user.email)
+        guard let user else {return}
+        
+        let result: Result<User, Error> = await performAsyncOperation {
+            try await self.manager.read(collection: .users, id: user.email)
+        }
+        
+        switch result {
+        case .success(let fetchedUser):
             self.user = fetchedUser
-        } catch let err {
-            print("Failed to refresh user: \(err.localizedDescription)")
+        case .failure(let error):
+            print("Failed to refresh user: \(error.localizedDescription)")
             self.errorMessage = "Failed to refresh user."
         }
     }
     
-    // Is read-only user followed by current user
-    func isFollowed(_ authUser: User) -> Bool {
+    func isFollowed(by: User) -> Bool {
         guard let user else {return false}
-        return authUser.following.contains(user.id)
+        return by.following.contains(user.id)
     }
     
     func fetchReviewsForUser(user: User) -> [Review] {
         return []
     }
+    
+//    private func updateFollowStatus(for u: User) async throws {
+//        var otherUser: User = try await self.manager.read(collection: .users, id: u.email)
+//        
+//        if otherUser.following.contains(user.id) {
+//            otherUser.following.removeAll(where: { $0 == user.id })
+//            user.followers.removeAll(where: { $0 == otherUser.id })
+//        } else {
+//            otherUser.following.append(user.id)
+//            user.followers.append(otherUser.id)
+//        }
+//        
+//        try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
+//        try await self.manager.update(collection: .users, id: user.email, object: user)
+//    }
 }

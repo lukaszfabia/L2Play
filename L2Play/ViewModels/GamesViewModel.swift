@@ -7,38 +7,61 @@
 
 import Foundation
 
-class GamesViewModel: ObservableObject {
+@MainActor
+class GamesViewModel: ObservableObject, AsyncOperationHandler {
+
     private let manager: FirebaseManager = FirebaseManager()
     @Published var games: [Game] = []
     @Published var recommendedGames: [Item] = []
-    @Published var errorMessage: String = ""
+    @Published var errorMessage: String? = nil
+    @Published var isLoading: Bool = false
+    
     
     func fetchRecommendations() {
-        
         // todo
     }
     
-    // Changes state for games when we want to fetch all (in main thread)
-    @MainActor
     func fetchGames(ids: [UUID]? = nil) async -> [Game] {
-        do {
-            self.games = try await self.manager.findAll(collection: .games, ids: ids)
+        let result: Result<[Game], Error> = await performAsyncOperation {
+            return try await self.manager.findAll(collection: .games, ids: ids)
+        }
+        
+        switch result {
+        case .success(let games):
+            self.games = games
             return self.games
-        } catch {
-            self.errorMessage = error.localizedDescription
+        case .failure:
             return []
         }
     }
 
-    
-    func fetchUsersPlaylist(user: User) async -> [Game] {
-        return await fetchGames(ids: user.playlist)
+    func fetchUsersPlaylist(user: User?) async -> [Game] {
+        guard let user else {return []}
+        
+        let result: Result<[Game], Error> = await performAsyncOperation {
+            return await self.fetchGames(ids: user.playlist)
+        }
+        
+        switch result {
+        case .success(let games):
+            return games
+        case .failure:
+            return []
+        }
     }
     
-    func fetchFavs(user: User) async -> [Item] {
+    func fetchFavs(user: User?) async -> [Item] {
+        guard let user else {return []}
+        let result: Result<[Item], Error> = await performAsyncOperation {
+            let games = await self.fetchGames(ids: user.favGames)
+            return games.map { Item(game: $0) }
+        }
         
-        let games = await fetchGames(ids: user.favGames)
-        
-        return games.map {Item(game: $0)}
+        switch result {
+        case .success(let items):
+            return items
+        case .failure:
+            return []
+        }
     }
 }

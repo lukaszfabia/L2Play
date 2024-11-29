@@ -5,13 +5,18 @@
 //  Created by Lukasz Fabia on 23/11/2024.
 //
 
-import SwiftUI
-import Combine
+import Foundation
 
-class GameViewModel: ObservableObject {
-    @Published var game: Game
+
+@MainActor
+class GameViewModel: ObservableObject, AsyncOperationHandler {
+    @Published var errorMessage: String? = nil
+    
+    @Published var isLoading: Bool = false
+    
+//    @Published var game: Game
+    var game: Game
     @Published private(set) var user: User
-    @Published var errorMessage: String = ""
     @Published var reviews: [Review] = []
     
     private let manager: FirebaseManager = FirebaseManager()
@@ -21,21 +26,24 @@ class GameViewModel: ObservableObject {
         return 0 
     }
     
-    @MainActor
     init(game: Game, user: User) {
         self.game = game
         self.user = user
     }
     
-    @MainActor
     func refreshGame() async {
-        do {
-            self.game = try await manager.read(collection: .games, id: game.id.uuidString)
-            
-            await self.fetchReviewsForGame()
-        } catch let err {
-            print(err.localizedDescription)
+        let result: Result<Game, Error> = await performAsyncOperation {
+            try await self.manager.read(collection: .games, id: self.game.id.uuidString)
         }
+        
+        switch result {
+        case .success(let fetchedGame):
+            self.game = fetchedGame
+        case .failure(let error):
+            print("Failed to refresh user: \(error.localizedDescription)")
+            self.errorMessage = "Failed to refresh game"
+        }
+        
     }
     
     func isOnList() -> Bool {
@@ -46,7 +54,7 @@ class GameViewModel: ObservableObject {
         return user.favGames.contains(game.id)
     }
     
-    private func toggleGame(for keyPath: WritableKeyPath<User, [UUID]>, refreshUser: @escaping (_ user: User) async -> Void) {
+    private func toggleGame(for keyPath: WritableKeyPath<User, [UUID]>) async {
         if user[keyPath: keyPath].contains(game.id) {
             if let index = user[keyPath: keyPath].firstIndex(of: game.id) {
                 user[keyPath: keyPath].remove(at: index)
@@ -55,35 +63,44 @@ class GameViewModel: ObservableObject {
             user[keyPath: keyPath].append(game.id)
         }
         
-        Task(priority: .high) {
-            try await self.manager.update(collection: .users, id: user.email, object: user)
-            await refreshUser(self.user)
+
+        let result: Result<_, Error> =  await performAsyncOperation {
+            try await self.manager.update(collection: .users, id: self.user.email, object: self.user)
+        }
+        
+        switch result {
+        case .success:
+            self.user = user
+        case .failure(let error):
+            print("Failed to update user: \(error.localizedDescription)")
+            self.errorMessage = "Failed to update user"
         }
     }
     
-    func toogleFavGameState(refreshUser: @escaping (_ user: User) async -> Void){
-        toggleGame(for: \.favGames, refreshUser: refreshUser)
+    func toogleFavGameState() async {
+        await toggleGame(for: \.favGames)
     }
     
-    func toggleGameState(refreshUser: @escaping (_ user: User) async -> Void) {
-        toggleGame(for: \.playlist, refreshUser: refreshUser)
+    func toggleGameState()  async {
+        await toggleGame(for: \.playlist)
     }
     
-    @MainActor
     func fetchReviewsForGame() async {
-        do {
-            let reviews: [Review] = try await manager.findAll(collection: .reviews, whereIs: ("gameID", self.game.id.uuidString))
-            
-            self.reviews = reviews
-        } catch let err {
-            self.errorMessage = "Failed to fetch reviews: \(err.localizedDescription)"
-            return
+        let result: Result<[Review], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .reviews, whereIs: ("gameID", self.game.id.uuidString))
+        }
+        
+        switch result {
+        case .failure(let error):
+            print("Failed to fetch all reviews: \(error.localizedDescription)")
+            self.errorMessage = "Failed to fetch all reviews"
+        case .success(let fetchedReviews):
+            self.reviews = fetchedReviews
         }
     }
     
-    @MainActor
+
     func updateGameRating() async {
-        // sum r.rating * (like - dislike) / len reviews
         var result: Double = 0
         let DEFAULT_POWER = 0.1
         
@@ -111,10 +128,17 @@ class GameViewModel: ObservableObject {
         
         self.game.rating = result
         
-        do {
-            try await manager.update(collection: .games, id: game.id.uuidString, object: game)
-        } catch {
-            self.errorMessage = "Failed to update"
+        let r: Result<_, Error> = await performAsyncOperation {
+            try await self.manager.update(collection: .games, id: self.game.id.uuidString, object: self.game)
         }
+        
+        switch r {
+        case .success:
+            await refreshGame()
+        case .failure(let error):
+            print("Failed to update game: \(error.localizedDescription)")
+            self.errorMessage = "Failed to update game"
+        }
+        
     }
 }

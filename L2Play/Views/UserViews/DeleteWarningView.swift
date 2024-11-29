@@ -67,8 +67,10 @@ struct DeleteAccountView: View {
                         title: Text("Confirm Deletion"),
                         message: Text("Are you sure you want to delete your account? This action cannot be undone."),
                         primaryButton: .destructive(Text("Delete")) {
-                            provider
-                                .deleteAccount(email: email)
+                            Task {
+                                await provider
+                                    .deleteAccount(email: email)
+                            }
                         },
                         secondaryButton: .cancel()
                     )

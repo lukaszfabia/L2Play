@@ -79,7 +79,7 @@ struct User: Codable, Identifiable {
     static func dummy() -> User {
         let url = URL(string: "https://placebeard.it/250/250")!
     
-        return User(firstName: "guest", lastName: "guest@example.com", email: "", avatar: url, playlist: [], favGames: [], blockedUsers: [], followers: [], following: [])
+        return User(firstName: "guest", lastName: "g", email: "guest@example.com", avatar: url, playlist: [], favGames: [], blockedUsers: [], followers: [], following: [])
     }
     
   

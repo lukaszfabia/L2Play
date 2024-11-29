@@ -13,25 +13,34 @@ struct UserImage: View {
     var h: CGFloat = 50
     
     var body: some View {
-        if let p = pic {
-            AsyncImage(url: p) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: w, height: h)
-                    .clipShape(Circle())
+        VStack(alignment: .leading) {
+            ZStack {
+                Circle()
+                    .fill(Color.indigo)
+                    .frame(width: w+5, height: h+5)
                     .shadow(radius: 12)
-            } placeholder: {
-                ProgressView()
-                    .frame(width: w, height: h)
+                
+                if let p = pic {
+                    AsyncImage(url: p) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: w, height: h)
+                            .clipShape(Circle())
+                            .shadow(radius: 12)
+                    } placeholder: {
+                        ProgressView()
+                            .frame(width: w, height: h)
+                    }
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: w, height: h)
+                        .overlay(Text("No profile picture")
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center))
+                }
             }
-        } else {
-            Circle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: w, height: h)
-                .overlay(Text("No profile picture")
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center))
         }
     }
 }

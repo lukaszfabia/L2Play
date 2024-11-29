@@ -8,116 +8,121 @@
 import SwiftUI
 
 let RATING_RANGE: Int = 5
+
 private struct ReviewRow<ReactionBar: View, CommentSection: View, AddComment: View>: View {
     @EnvironmentObject private var provider: AuthViewModel
     let isPresentedCommentsView: Bool
     var deleteReview: () -> Void
-    @Binding var review: Review?
+    var reload: () async -> Void
+    @Binding var review: Review
     
     @ViewBuilder var reactionBar: () -> ReactionBar
     @ViewBuilder var addComment: () -> AddComment
     @ViewBuilder var commentSection: () -> CommentSection
     
+    @State private var isNavigationActive: Bool = false
+    
+    let user: User?
+    
     var body: some View {
-        if let review = review {
-            VStack(alignment: .leading) {
-                HStack {
-                    UserImage(pic: review.author.profilePicture)
+        VStack(alignment: .leading) {
+            HStack {
+                UserImage(pic: review.author.profilePicture)
+                
+                Divider()
+                
+                // TODO: fix navigation to user
+                VStack(alignment: .leading) {
                     
-                    Divider()
+                    //                    NavigationLink(destination: UserView(user: user)) {
+                    Text(review.author.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    //                    }
                     
-                    // TODO: fix navigation to user 
-                    NavigationLink(destination: EmptyView()) {
-//                    NavigationLink(destination: userDestinationView(for: review)) {
-                        VStack(alignment: .leading) {
-                            Text(review.author.name)
-                                .font(.headline)
-                            HStack {
-                                if review.updatedAt != review.createdAt {
-                                    Image(systemName: "square.and.pencil")
-                                        .foregroundStyle(.secondary)
-                                    Text(review.updatedAt.timeAgoSinceDate())
-                                        .foregroundStyle(.secondary)
-                                        .font(.caption)
-                                } else {
-                                    Text(review.createdAt.timeAgoSinceDate())
-                                        .foregroundStyle(.secondary)
-                                        .font(.caption)
-                                }
-                            }
+                    
+                    HStack {
+                        if review.updatedAt != review.createdAt {
+                            Image(systemName: "square.and.pencil")
+                                .foregroundStyle(.secondary)
+                            Text(review.updatedAt.timeAgoSinceDate())
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                        } else {
+                            Text(review.createdAt.timeAgoSinceDate())
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
                         }
                     }
-                    .foregroundStyle(.primary)
-
-                    
-                    Spacer()
-                    
-                    Menu {
-                        Button(role: .destructive, action: { deleteReview() }) {
+                }
+                
+                Spacer()
+                
+                Menu {
+                    // if review belongs to current user, he edit it
+                    if provider.user.email == review.author.email {
+                        Button(role: .destructive, action: {
+                            deleteReview()
+                            Task {
+                                await reload()
+                            }
+                            
+                        }) {
                             Label("Delete", systemImage: "trash")
                         }
                         Button(action: { /*editReview()*/ }) {
                             Label("Edit", systemImage: "pencil")
                         }
-                        Button(action: { /* share review*/ }) {
-                            Label("Share", systemImage: "square.and.arrow.up")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.title3)
-                            .foregroundColor(.primary)
-                            .padding()
                     }
+                    Button(action: { /* share review*/ }) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title3)
+                        .foregroundColor(.primary)
+                        .padding()
                 }
-                
-                HStack {
-                    Text("\(review.rating)")
-                        .font(.title)
-                    +
-                    Text("/\(RATING_RANGE)")
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "star.fill")
-                }
-                
-                if !review.review.isEmpty {
-                    Text(review.review)
-                        .padding(.top, 2)
-                }
-                
-                if !review.oldReviews.isEmpty && isPresentedCommentsView {
-                    oldReviewsView(for: review.oldReviews)
-                }
-                
-                Divider()
-                    .padding(.vertical, 5)
-                
-                HStack(spacing: 6) {
-                    reactionBar()
-                }
-                .padding(.horizontal, 5)
-                .padding(.vertical, 20)
-                
-                VStack(spacing: 10) {
-                    addComment()
-                    commentSection()
-                }
-                .padding(.bottom, 20)
             }
-            .padding()
+            
+            HStack {
+                Text("\(review.rating)")
+                    .font(.title)
+                +
+                Text("/\(RATING_RANGE)")
+                    .foregroundStyle(.secondary)
+                Image(systemName: "star.fill")
+            }
+            
+            if !review.review.isEmpty {
+                Text(review.review)
+                    .padding(.top, 2)
+            }
+            
+            if !review.oldReviews.isEmpty && isPresentedCommentsView {
+                oldReviewsView(for: review.oldReviews)
+            }
+            
+            Divider()
+                .padding(.vertical, 5)
+            
+            HStack(spacing: 6) {
+                reactionBar()
+            }
+            .padding(.horizontal, 5)
+            .padding(.vertical, 20)
+            
+            VStack(spacing: 10) {
+                addComment()
+                commentSection()
+            }
+            .padding(.bottom, 20)
         }
+        .padding()
     }
+    
     
     // MARK: - helper views
-    
-    @ViewBuilder
-    private func userDestinationView(for review: Review) -> some View {
-        if provider.user.email == review.author.email {
-            UserView()
-        } else {
-            ReadOnlyUserView(email: review.author.email)
-        }
-    }
-
     
     @ViewBuilder
     private func oldReviewsView(for oldReviews: [OldReview]) -> some View {
@@ -163,7 +168,6 @@ private struct ReviewRow<ReactionBar: View, CommentSection: View, AddComment: Vi
 private struct ReactionBar: View {
     @StateObject var reviewViewModel: ReviewViewModel
     @Binding var isPresentedCommentsView: Bool
-    let review: Review
     
     var body: some View {
         HStack{
@@ -180,22 +184,24 @@ private struct ReactionBar: View {
             Spacer()
             
             Button(action: {
-                reviewViewModel.like()
-                HapticManager.shared.generateHapticFeedback(style: .light)
+                Task{
+                    await reviewViewModel.like()
+                    HapticManager.shared.generateHapticFeedback(style: .light)
+                }
             }) {
                 Image(systemName: reviewViewModel.hasUserReacted(for: \.likes) ? "heart.fill" : "heart")
-                Text("\(review.likes.count.shorterNumber())")
+                Text("\(reviewViewModel.review.likes.count.shorterNumber())")
             }
             
-            Button(action: {
-                reviewViewModel.dislike()
+            Button(action:  {Task{
+                await reviewViewModel.dislike()
                 HapticManager.shared.generateHapticFeedback(style: .light)
-            }) {
+            }}) {
                 Image(systemName: reviewViewModel.hasUserReacted(for: \.dislikes) ?  "hand.thumbsdown.fill" : "hand.thumbsdown")
-                if review.dislikes.count == 0 {
+                if reviewViewModel.review.dislikes.count == 0 {
                     Text("0")
                 } else {
-                    Text("-\(review.dislikes.count.shorterNumber())")
+                    Text("-\(reviewViewModel.review.dislikes.count.shorterNumber())")
                 }
             }
         }
@@ -204,100 +210,136 @@ private struct ReactionBar: View {
 
 struct ReviewCard: View {
     @StateObject var reviewViewModel: ReviewViewModel
+    @StateObject private var userViewModel: UserViewModel
     @State private var isPresentedCommentsView = false
+    @State private var comment: String = ""
+    
+    var reloadGame: () async -> Void
+
+      init(reviewViewModel: ReviewViewModel, reloadGame: @escaping @Sendable () async -> Void) {
+          _reviewViewModel = StateObject(wrappedValue: reviewViewModel)
+          _userViewModel = StateObject(wrappedValue: UserViewModel())
+          self.reloadGame = reloadGame
+      }
     
     var body: some View {
-        if let review = reviewViewModel.review {
-            ReviewRow(
-                isPresentedCommentsView: isPresentedCommentsView,
-                deleteReview: reviewViewModel.deleteReview,
-                review: $reviewViewModel.review,
-                reactionBar: {
-                    ReactionBar(reviewViewModel: reviewViewModel, isPresentedCommentsView: $isPresentedCommentsView, review: review)
-                },
-                addComment: {},
-                commentSection: {}
-            )
-            .cornerRadius(15)
-            .sheet(isPresented: $isPresentedCommentsView) {
-                NavigationStack {
-                    ScrollView {
-                        ReviewRow(
-                            isPresentedCommentsView: isPresentedCommentsView,
-                            deleteReview: reviewViewModel.deleteReview,
-                            review: $reviewViewModel.review,
-                            reactionBar: {
-                                ReactionBar(reviewViewModel: reviewViewModel, isPresentedCommentsView: $isPresentedCommentsView, review: review)
-                            },
-                            addComment: {
-                                AddCommentView(reviewViewModel: reviewViewModel)
-                            },
-                            commentSection: {
-                                ForEach(reviewViewModel.comments) { comment in
-                                    CommentRow(comment: comment)
-                                }
+        ReviewRow(
+            isPresentedCommentsView: isPresentedCommentsView,
+            deleteReview: reviewViewModel.deleteReview,
+            reload: reloadGame,
+            review: $reviewViewModel.review,
+            reactionBar: {
+                ReactionBar(reviewViewModel: reviewViewModel, isPresentedCommentsView: $isPresentedCommentsView)
+            },
+            addComment: {},
+            commentSection: {},
+            user: userViewModel.user
+        )
+        .cornerRadius(15)
+        .sheet(isPresented: $isPresentedCommentsView) {
+            NavigationStack {
+                ScrollView {
+                    ReviewRow(
+                        isPresentedCommentsView: isPresentedCommentsView,
+                        deleteReview: reviewViewModel.deleteReview,
+                        reload: reloadGame,
+                        review: $reviewViewModel.review,
+                        reactionBar: {
+                            ReactionBar(reviewViewModel: reviewViewModel, isPresentedCommentsView: $isPresentedCommentsView)
+                        },
+                        addComment: {
+                            AddCommentView(comment: $comment) {
+                                reviewViewModel.addComment(comment)
                             }
-                        )
+                        },
+                        commentSection: {
+                            ForEach(reviewViewModel.comments) { comment in
+                                CommentRow(comment: comment)
+                            }
+                        },
+                        user: userViewModel.user
+                    )
+                }
+                .onAppear() {
+                    Task {
+                        await reviewViewModel.fetchComments()
                     }
-                    .navigationTitle("\(String(describing: review.author.name.takeFirstWord()))'s review")
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Close") {
-                                isPresentedCommentsView = false
-                            }
+                }
+                .navigationTitle("\(String(describing: reviewViewModel.review.author.name.takeFirstWord()))'s review")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Close") {
+                            isPresentedCommentsView = false
                         }
                     }
                 }
             }
-
         }
-    }
-}
-
-
-private struct AddCommentView: View {
-    @EnvironmentObject private var provider: AuthViewModel
-    @State private var comment: String = ""
-    @StateObject var reviewViewModel: ReviewViewModel
-    
-    var body: some View {
-        HStack {
-            UserImage(pic: provider.user.profilePicture , w: 45, h: 45)
-            
-            CustomFieldWithIcon(acc: $comment, placeholder: "Comment...", isSecure: false)
-                .frame(maxWidth: .infinity)
-                .textInputAutocapitalization(.sentences)
-            
-            Button(action: {
-                Task {
-                    HapticManager.shared.generateHapticFeedback(style: .light)
-                    await reviewViewModel.addComment(comment)
-                    comment = ""
+        .onAppear {
+            Task {
+                if let user = await userViewModel.fetchUserByEmail(reviewViewModel.review.author.email) {
+                    self.userViewModel.user = user
                 }
-            }) {
-                HStack {
-                    Image(systemName: "arrow.right")
-                        .foregroundColor(.white)
-                        .font(.system(size: 18))
-                }
-                .padding()
-                .background(Color.accentColor)
-                .clipShape(Circle())
             }
         }
     }
 }
 
+
+
+
+private struct AddCommentView: View {
+    @EnvironmentObject private var provider: AuthViewModel
+    @Binding var comment: String
+    var onSubmit: () async -> Void
+    
+    @State private var isSubmitting = false
+    
+    var body: some View {
+        HStack {
+            UserImage(pic: provider.user.profilePicture, w: 45, h: 45)
+            
+            TextField("Add a comment...", text: $comment)
+                .textFieldStyle(.roundedBorder)
+                .padding(.vertical, 8)
+                .disabled(isSubmitting)
+            
+            Button(action: {
+                HapticManager.shared.generateHapticFeedback(style: .light)
+                Task {
+                    isSubmitting = true
+                    await onSubmit()
+                    comment = ""
+                    isSubmitting = false
+                }
+            }) {
+                Image(systemName: "paperplane.fill")
+                    .padding(10)
+                    .background(Circle().fill(Color.accentColor))
+                    .foregroundColor(.white)
+            }
+            .disabled(comment.isEmpty || isSubmitting)
+        }
+    }
+}
+
+
 struct CommentRow: View {
     let comment: Comment
+    @State private var commenter: User? = nil
+    
+    @StateObject private var userViewModel: UserViewModel = UserViewModel()
     
     var body: some View {
         HStack(spacing: 6) {
             UserImage(pic: comment.author.profilePicture, w: 40, h: 40)
             
             VStack(alignment: .leading) {
+                //                NavigationLink(destination: UserView(user: commenter), label: {
                 Text(comment.author.name)
                     .font(.headline)
+                    .foregroundStyle(.primary)
+                //                })
                 
                 Text(comment.createdAt.timeAgoSinceDate())
                     .foregroundStyle(.gray)
@@ -309,6 +351,10 @@ struct CommentRow: View {
             .padding()
             
             Spacer()
+        }.onAppear() {
+            Task {
+                commenter = await userViewModel.fetchUserByEmail(comment.author.email)
+            }
         }
     }
 }

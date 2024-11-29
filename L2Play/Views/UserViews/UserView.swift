@@ -6,66 +6,90 @@
 //
 
 import SwiftUI
-
-
-// TODO: add row with favourite game, playlist row, and reviews in componetnts, right now there is game card as a placeholder
-
 struct UserView: View {
-    @EnvironmentObject private var provider: AuthViewModel
-    @StateObject private var gamesViewModels: GamesViewModel = GamesViewModel()
-    
+    @EnvironmentObject private var provider: AuthViewModel // for me
+    @StateObject private var gamesViewModel: GamesViewModel = GamesViewModel()
+    @StateObject private var userViewModel: UserViewModel
+
     @State private var favs: [Item] = []
     @State private var playlist: [Game] = []
     @State private var reviews: [Review] = []
-    
+
     @State private var selectedTab = 0
     @State private var isSettingsPresented = false
+    @State private var showErrorAlert = false
     
+    init(user: User?) {
+        print("Czy to sie wykona")
+        self._userViewModel = StateObject(wrappedValue: UserViewModel(user: user))
+    }
+
+    private var currentUser: User {
+        userViewModel.user ?? provider.user 
+    }
     
+    private var isReadOnly: Bool {
+        !(userViewModel.isAuth(provider.user.email))
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical) {
-                VStack {
-                    ProfileHeaderView(user: provider.user, followSection: {EmptyView()})
-                    
-                    CustomDivider()
-                    
-                    Picker(selection: $selectedTab, label: Text("Menu")) {
-                        Text("Favourites").tag(0)
-                        Text("Playlist").tag(1)
-                        Text("My Reviews").tag(2)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding()
-                    
-                    switch selectedTab {
-                    case 0:
-                        FavoritesView(favs: $favs)
+            if provider.isLoading || gamesViewModel.isLoading {
+                LoadingView()
+            } else if let err = provider.errorMessage ?? gamesViewModel.errorMessage {
+                Text(err)
+            } else {
+                ScrollView(.vertical) {
+                    VStack {
+                        ProfileHeaderView(user: currentUser, followSection: followButtonIfNeeded)
                         
-                    case 1:
-                        PlaylistView(playlist: $playlist)
+                        CustomDivider()
                         
-                    case 2:
-                        MyReviewsView(reviews: $reviews)
+                        Picker(selection: $selectedTab, label: Text("Menu")) {
+                            Text("Favourites").tag(0)
+                            Text("Playlist").tag(1)
+                            if !isReadOnly {
+                                Text("My Reviews").tag(2)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .padding()
                         
-                    default:
-                        EmptyView()
-                    }
-                }
-                .padding()
-                .navigationTitle("Profile")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { isSettingsPresented.toggle() }) {
-                            Image(systemName: "gear")
-                                .resizable()
-                                .frame(width: 32, height: 32)
+                        switch selectedTab {
+                        case 0:
+                            FavoritesView(favs: $favs)
+                        case 1:
+                            PlaylistView(playlist: $playlist)
+                        case 2:
+                            if !isReadOnly {
+                                MyReviewsView(reviews: $reviews)
+                            } else {
+                                EmptyView()
+                            }
+                        default:
+                            EmptyView()
                         }
                     }
-                }
-                .sheet(isPresented: $isSettingsPresented) {
-                    SettingsView()
+                    .padding()
+                    .navigationTitle("Profile")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        if !isReadOnly {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button(action: { isSettingsPresented.toggle() }) {
+                                    Image(systemName: "gear")
+                                        .resizable()
+                                        .frame(width: 32, height: 32)
+                                }
+                            }
+                        }
+                    }
+                    .sheet(isPresented: $isSettingsPresented) {
+                        SettingsView()
+                    }
+                    .alert(isPresented: $showErrorAlert) {
+                        Alert(title: Text("Error"), message: Text(provider.errorMessage ?? gamesViewModel.errorMessage ?? "An unknown error occurred"), dismissButton: .default(Text("OK")))
+                    }
                 }
             }
         }
@@ -77,12 +101,32 @@ struct UserView: View {
         }
     }
 
+    @ViewBuilder
+    private func followButtonIfNeeded() -> some View {
+        if isReadOnly {
+            Button(action: {
+                Task {
+                    await provider.followUser(currentUser)
+                }
+            }) {
+                Text(userViewModel.isFollowed(by: provider.user) == true ? "Following" : "Follow")
+                    .font(.headline)
+                    .foregroundColor(.white)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: 30)
+            .background(userViewModel.isFollowed(by: provider.user) == true ? Color.clear : Color.accentColor)
+            .cornerRadius(20)
+        }
+    }
+
     private func loadData() {
+        guard !provider.isLoading && !gamesViewModel.isLoading else { return }
+
         Task {
-            await provider.refreshUser(provider.user)
-            favs =  await gamesViewModels.fetchFavs(user: provider.user)
-            playlist = await gamesViewModels.fetchUsersPlaylist(user: provider.user)
-//            reviews = await gamesViewModels.fetchReviewsForUser(user: provider.user)
+            await userViewModel.refreshUser()
+            favs = await gamesViewModel.fetchFavs(user: currentUser)
+            playlist = await gamesViewModel.fetchUsersPlaylist(user: currentUser)
         }
     }
 }

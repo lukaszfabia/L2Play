@@ -5,15 +5,14 @@
 //  Created by Lukasz Fabia on 08/10/2024.
 //
 
-import Foundation
 import FirebaseAuth
 import Firebase
 import FirebaseCore
 import GoogleSignIn
 import Combine
 
-
-class AuthViewModel: ObservableObject {
+@MainActor
+class AuthViewModel: ObservableObject, AsyncOperationHandler {
     private let manager = FirebaseManager()
     private let guest = User.dummy()
     
@@ -21,7 +20,6 @@ class AuthViewModel: ObservableObject {
     @Published var user: User
     @Published var errorMessage: String? = nil
     @Published var isLoading: Bool = false
-    
     
     init(isAuthenticated: Bool, user: User) {
         self.isAuthenticated = isAuthenticated
@@ -45,52 +43,44 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    @MainActor
     func refreshUser(_ user: User) async {
-        do {
-            let fetchedUser: User = try await self.manager.read(collection: .users, id: user.email)
+        let result: Result<User, Error>  = await performAsyncOperation {
+            try await self.manager.read(collection: .users, id: user.email)
+        }
+        
+        switch result {
+        case .success(let fetchedUser):
             self.user = fetchedUser
             self.setInCtx()
-        } catch let err {
-            print("Failed to refresh user: \(err.localizedDescription)")
-            self.errorMessage = "Failed to refresh user."
+        case .failure(let error):
+            print(error.localizedDescription)
+            self.errorMessage = "Failed to refresh user: \(error.localizedDescription)"
         }
     }
     
-    func deleteAccount(email: String) {
+    func deleteAccount(email: String) async {
         self.isLoading = true
         
-        // validate email (is it event possible that user can't have email on google ?)
         if !AuthValidator.compare(providedEmail: email, currentEmail: user.email) {
             self.isLoading = false
             self.errorMessage = "Entered email is not the same as your current email."
             return
         }
         
-        
-        // remove from ctx
-        if let fuser = Auth.auth().currentUser {
-            fuser.delete() { error in
-                if let _ = error {
-                    self.errorMessage = "Failed to remove account."
-                    self.isLoading = false
-                } else {
-                    // remove from db
-                    self.manager.delete(collection: .users, id: email) { result in
-                        switch result {
-                        case .failure:
-                            self.errorMessage = "Failed to remove user."
-                        case .success:
-                            self.user = User.dummy()
-                            self.isAuthenticated = false
-                            UserDefaults.standard.removeObject(forKey: "currentUser")
-                        }
-                        
-                    }
-                    
-                    self.isLoading = false
-                }
-            }
+        let _ = await performAsyncOperation {
+            return try await self.deleteAccountFromFirebase(email: email)
+        }
+    }
+    
+    private func deleteAccountFromFirebase(email: String) async throws {
+        if let firebaseUser = Auth.auth().currentUser {
+            try await firebaseUser.delete()
+            self.manager.delete(collection: .users, id: email)
+            self.user = User.dummy()
+            self.isAuthenticated = false
+            UserDefaults.standard.removeObject(forKey: "currentUser")
+        } else {
+            throw NSError(domain: "AuthViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "User not found"])
         }
     }
     
@@ -108,7 +98,6 @@ class AuthViewModel: ObservableObject {
             }
             
             let u = User(firebaseUser: user)
-            
             self.handleUser(user: u)
         }
     }
@@ -121,7 +110,6 @@ class AuthViewModel: ObservableObject {
             self.handleAuthError(message: "Email or password are incorrect", error: nil)
             return
         }
-        
         
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
@@ -136,49 +124,58 @@ class AuthViewModel: ObservableObject {
     }
     
     func continueWithGoogle(presenting viewController: UIViewController) {
+        self.isLoading = true
+
+        
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             self.errorMessage = "Failed to retrieve client ID."
+            self.isLoading = false
             return
         }
-        
+
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
-        
-        self.isLoading = true
-        
+
         GIDSignIn.sharedInstance.signIn(withPresenting: viewController) { [weak self] result, error in
             guard let self = self else { return }
             
             if let error = error {
                 self.handleAuthError(message: "Google sign-in failed.", error: error)
+                self.isLoading = false
                 return
             }
-            
-            guard let user = result?.user,
-                  let idToken = user.idToken?.tokenString else {
+
+            guard let user = result?.user, let idToken = user.idToken?.tokenString else {
                 self.handleAuthError(message: "Failed to retrieve Google token.")
+                self.isLoading = false
                 return
             }
-            
+
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
-            
+
             Auth.auth().signIn(with: credential) { [weak self] result, error in
                 guard let self = self else { return }
                 
                 if let error = error {
                     self.handleAuthError(message: "Firebase authentication failed.", error: error)
+                    self.isLoading = false
                     return
                 }
-                
+
                 guard let firebaseUser = result?.user else {
                     self.handleAuthError(message: "Failed to authenticate user.")
+                    self.isLoading = false
                     return
                 }
-                
+
                 self.handleUser(user: User(firebaseUser: firebaseUser))
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
             }
         }
     }
+
     
     private func handleAuthError(message: String, error: Error? = nil) {
         DispatchQueue.main.async {
@@ -191,41 +188,20 @@ class AuthViewModel: ObservableObject {
     }
     
     private func handleUser(user: User) {
-        Task(priority: .high) {
-            do {
-                
-                let user: User = try await self.manager.read(collection: .users, id: user.email)
-                
+        Task {
+            let result: Result<User, Error> = await performAsyncOperation {
+                try await self.manager.read(collection: .users, id: user.email)
+            }
+            
+            switch result {
+            case .success(let existingUser):
                 DispatchQueue.main.async {
-                    self.user = user
+                    self.user = existingUser
                     self.isAuthenticated = true
                     self.setInCtx()
                 }
-            } catch {
-                do {
-                    let user: User = try await self.manager.create(
-                        collection: .users,
-                        object: user,
-                        uniqueFields: ["email"],
-                        uniqueValues: [user.email],
-                        customID: user.email
-                    )
-                    
-                    DispatchQueue.main.async {
-                        self.user = user
-                        self.isAuthenticated = true
-                        self.setInCtx()
-                    }
-                    
-                } catch {
-                    DispatchQueue.main.async {
-                        self.handleAuthError(message: "Failed to create user in database.", error: error)
-                    }
-                }
-            }
-            
-            DispatchQueue.main.async {
-                self.isLoading = false
+            case .failure(let error):
+                self.handleAuthError(message: "Failed to create user in database.", error: error)
             }
         }
     }
@@ -236,41 +212,37 @@ class AuthViewModel: ObservableObject {
             try firebaseAuth.signOut()
             self.isAuthenticated = false
             self.user = guest
-            
             UserDefaults.standard.removeObject(forKey: "currentUser")
         } catch let signOutError as NSError {
             self.errorMessage = signOutError.localizedDescription
         }
     }
     
-    @MainActor
     func followUser(_ u: User) async {
-        var otherUser: User
-        
-        do {
-            otherUser = try await manager.read(collection: .users, id: u.email)
-        } catch {
-            self.errorMessage = "User does not exist"
-            return
+        let result = await performAsyncOperation {
+            try await self.updateFollowStatus(for: u)
         }
         
-        // remove from both lists
+        switch result {
+        case .success:
+            break
+        case .failure(let error):
+            self.errorMessage = "Failed to follow: \(error.localizedDescription)"
+        }
+    }
+    
+    private func updateFollowStatus(for u: User) async throws {
+        var otherUser: User = try await self.manager.read(collection: .users, id: u.email)
+        
         if otherUser.following.contains(user.id) {
             otherUser.following.removeAll(where: { $0 == user.id })
             user.followers.removeAll(where: { $0 == otherUser.id })
-        }
-        // append
-        else {
+        } else {
             otherUser.following.append(user.id)
             user.followers.append(otherUser.id)
         }
         
-        do {
-            try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
-            try await self.manager.update(collection: .users, id: user.email, object: user)
-        } catch {
-            self.errorMessage = "Failed to follow"
-        }
+        try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
+        try await self.manager.update(collection: .users, id: user.email, object: user)
     }
 }
-

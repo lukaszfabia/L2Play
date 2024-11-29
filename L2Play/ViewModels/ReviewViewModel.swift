@@ -7,11 +7,15 @@
 
 import Foundation
 
-class ReviewViewModel: ObservableObject {
-    @Published private var user: User
+@MainActor
+class ReviewViewModel: ObservableObject, AsyncOperationHandler {
+    @Published var errorMessage: String? = ""
+    
+    @Published var isLoading: Bool = false
+    
+    @Published var user: User
     @Published private var game: Game
-    @Published private var errorMessage: String = ""
-    @Published var review: Review? = nil // potential users review
+    @Published var review: Review
     @Published var comments: [Comment] = []
     
     
@@ -21,20 +25,19 @@ class ReviewViewModel: ObservableObject {
         self.user = user
         self.game = game
         self.review = review
-        
-        Task {
-            await fetchComments()
-        }
     }
-    
-    var commentsCount: Int {
-        return comments.count
-    }
-    
     
     init(user: User, game: Game) {
         self.user = user
         self.game = game
+        
+        // potential reveiew for current user
+        self.review = Review(review: "", rating: 0, gameID: game.id, author: Author(user: user))
+    }
+
+    
+    var commentsCount: Int {
+        return comments.count
     }
     
     private func toggleReaction(removeKeyPath: WritableKeyPath<Review, [UUID]>, addKeyPath: WritableKeyPath<Review, [UUID]>, review: inout Review) -> Review {
@@ -48,130 +51,123 @@ class ReviewViewModel: ObservableObject {
         return review
     }
     
-    private func updateReactState(r: Review) {
-        Task {
-            do {
-                try await manager.update(collection: .reviews, id: r.id.uuidString, object: r)
-            } catch {
-                print("Failed to react")
-            }
+    private func updateReactState(r: Review) async {
+        let result: Result<_, Error> = await performAsyncOperation {
+            try await self.manager.update(collection: .reviews, id: r.id.uuidString, object: r)
         }
         
-        DispatchQueue.main.async{
+        switch result {
+        case .success:
             self.review = r
+        case .failure(let error):
+            print("Failed to update review: \(error.localizedDescription)")
+            self.errorMessage = "Failed to updat review"
         }
     }
     
-    func like() {
-        guard var r = review else { return }
-        r = toggleReaction(removeKeyPath: \.dislikes, addKeyPath: \.likes, review: &r)
-        updateReactState(r: r)
+    func like() async {
+        review = toggleReaction(removeKeyPath: \.dislikes, addKeyPath: \.likes, review: &review)
+        await updateReactState(r: review)
     }
     
-    func dislike() {
-        guard var r = review else { return }
-        r = toggleReaction(removeKeyPath: \.likes, addKeyPath: \.dislikes, review: &r)
-        updateReactState(r: r)
+    func dislike() async {
+        review = toggleReaction(removeKeyPath: \.likes, addKeyPath: \.dislikes, review: &review)
+        await updateReactState(r: review)
     }
     
     
     func hasUserReacted(for keyPath: WritableKeyPath<Review, [UUID]>) -> Bool {
-        guard let r = review else { return false }
-        
-        return r[keyPath: keyPath].contains(user.id)
+        return review[keyPath: keyPath].contains(user.id)
     }
     
     func deleteReview() {
-        if let r = review {
-            self.manager.delete(collection: .reviews, id: r.id.uuidString){ res in
-                switch res {
-                case .failure:
-                    self.errorMessage = "Failed to remove review"
-                case .success:
-                    self.review = nil
-                }
-            }
-        }
+        self.manager.delete(collection: .reviews, id: review.id.uuidString)
+        //reload view
     }
     
-    @MainActor
     func addReview(content: String, rating: Int) async {
         var reviews: [Review] = []
-        
-        do {
-            let fetchedRes: [Review] = try await manager.findAll(collection: .reviews, whereIs: ("gameID", game.id.uuidString))
-            reviews = fetchedRes
-        } catch let err {
-            
-            self.errorMessage = err.localizedDescription
-            
-            return
+        // fetch reviews for a game
+        let result: Result<[Review], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .reviews, whereIs: ("gameID", self.game.id.uuidString))
         }
         
-        let userReview = reviews.filter { $0.author.email == user.email }
+        switch result {
+        case .success(let fetchedReviews):
+            reviews = fetchedReviews
+        case .failure(let error):
+            print("Failed to fetch reviews: \(error.localizedDescription)")
+            self.errorMessage = "Failed to fetch reviews"
+            return
+        }
+    
+        let userReview = reviews.first {$0.author.email == user.email}
         
-        if !userReview.isEmpty {
-            // just update
-            let old = userReview.first!
+        if let userReview {
+            let old = userReview
             
+
             let updatedReview = Review(oldReview: old, newReview: content, newRating: rating)
             
-            do {
-                try await manager.update(collection: .reviews, id: old.id.uuidString, object: updatedReview)
-                
-                
+            let updateResult: Result<_, Error> = await performAsyncOperation {
+                try await self.manager.update(collection: .reviews, id: old.id.uuidString, object: updatedReview)
+            }
+            
+            switch updateResult {
+            case .success:
                 self.review = updatedReview
-                
-            } catch let err {
-                
-                self.errorMessage = err.localizedDescription
-                
-                return
+            case .failure(let error):
+                print("Failed to update review: \(error.localizedDescription)")
+                self.errorMessage = "Failed to update review"
             }
+            
         } else {
+
             let newReview = Review(review: content, rating: rating, gameID: game.id, author: Author(user: user))
-            do {
-                let res: Review = try await manager.create(collection: .reviews, object: newReview, customID: newReview.id.uuidString)
-                
-                
-                self.review = res
-                
-            } catch let err {
-                
-                self.errorMessage = err.localizedDescription
-                
-                
-                return
+            
+            
+            let createResult: Result<Review, Error> = await performAsyncOperation {
+                try await self.manager.create(collection: .reviews, object: newReview, customID: newReview.id.uuidString)
+            }
+            
+            switch createResult {
+            case .success(let fetchedReview):
+                self.review = fetchedReview
+            case .failure(let error):
+                print("Failed to create review: \(error.localizedDescription)")
+                self.errorMessage = "Failed to create review"
             }
         }
     }
+
     
-    @MainActor
     func fetchComments() async {
-        guard let r = review else { return }
-        do {
-            let comments : [Comment] = try await manager.findAll(collection: .comments, whereIs: ("reviewID", r.id.uuidString))
-            
-            self.comments = comments
-        } catch {
-            return
+        let result: Result<[Comment], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .comments, whereIs: ("reviewID", self.review.id.uuidString))
+        }
+        
+        switch result {
+        case .success(let fetchedComments):
+            comments = fetchedComments
+        case .failure(let error):
+            print("Failed to fetch comments: \(error.localizedDescription)")
+            errorMessage = "Failed to fetch comments"
         }
     }
+
+
     
-    @MainActor
-    func addComment(_ comment: String) async {
-        guard let r = review else { return } // does not exits so cant add elo
-        
-        do  {
-            let newComment = Comment(reviewID: r.id, comment: comment, author: Author(user: user))
+    func addComment(_ comment: String) {
+        do {
+            let c = try manager.create(
+                collection: .comments,
+                object: Comment(reviewID: review.id, comment: comment, author: Author(user: user))
+            )
             
-            let _ = try manager.create(collection: .comments, object: newComment)
-            
-            comments.append(newComment)
+            comments.append(c)
         } catch let err {
-            self.errorMessage = "Failed to add comment"
             print("Failed to add comment: \(err.localizedDescription)")
+            self.errorMessage = "Failed to add comment"
         }
-        
     }
 }

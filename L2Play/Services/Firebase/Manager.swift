@@ -47,18 +47,15 @@ class FirebaseManager {
         
         let snapshot = try await q.getDocuments()
         
-        guard snapshot.isEmpty else {
+        guard snapshot.isEmpty || uniqueFields == nil else {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Document already exist."])
         }
         
         do {
             let q = db.collection(collection.rawValue)
             
-            
             try q.document(customID).setData(from: object)
-            
-            
-            
+
             return object
         } catch {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create document."])
@@ -90,14 +87,8 @@ class FirebaseManager {
     }
     
     
-    func delete(collection: Collections, id: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        db.collection(collection.rawValue).document(id).delete { error in
-            if let error = error {
-                completion(.failure(error))
-            } else {
-                completion(.success(()))
-            }
-        }
+    func delete(collection: Collections, id: String)  {
+       db.collection(collection.rawValue).document(id).delete()
     }
     
     func findAll<T: Codable & Identifiable>(collection: Collections, ids: [UUID]? = nil) async throws -> [T] {

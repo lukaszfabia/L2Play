@@ -20,47 +20,44 @@ struct MainView: View {
     @State private var selectedSideMenuTab = 0
     
     var body: some View {
-        if provider.isLoading {
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle())
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
-        }
-        
-        /// model view model view (mvvm)
-        
-        else if provider.isAuthenticated {
-            TabView{
-                HomeView()
-                    .tabItem(){
-                        Image(systemName: "house")
-                        Text("Home")
-                    }
-                ChatView()
-                    .tabItem(){
-                        Image(systemName: "message.fill")
-                        Text("Chat")
-                    }
-                UserView()
-                    .tabItem(){
-                        Image(systemName: "person.fill")
-                        Text("Profile")
-                            .foregroundStyle(Color.primary)
-                }
-                ExploreGamesView()
-                    .tabItem {
-                        Image(systemName: "magnifyingglass")
-                        Text("Explore")
-                    }
+        Group {
+            if provider.isLoading {
+                LoadingView()
+                    .transition(.opacity)
+            } else if provider.isAuthenticated {
+                AuthenticatedView()
+                    .transition(.move(edge: .trailing))
+            } else {
+                NotLoggedMenu()
+                    .transition(.move(edge: .leading))
             }
-        } else {
-            NotLoggedMenu()
+        }
+        .animation(.easeInOut(duration: 0.5), value: provider.isLoading)
+    }
+    
+    private func AuthenticatedView() -> some View {
+        TabView {
+            HomeView()
+                .tabItem {
+                    Image(systemName: "house")
+                    Text("Home")
+                }
+            ChatView()
+                .tabItem {
+                    Image(systemName: "message.fill")
+                    Text("Chat")
+                }
+            UserView(user: provider.user)
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("Profile")
+                        .foregroundStyle(Color.primary)
+                }
+            ExploreGamesView()
+                .tabItem {
+                    Image(systemName: "magnifyingglass")
+                    Text("Explore")
+                }
         }
     }
-}
-
-
-#Preview {
-    MainView()
-        .environmentObject(AuthViewModel(isAuthenticated: true, user: .dummy()))
 }

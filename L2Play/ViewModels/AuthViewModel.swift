@@ -7,12 +7,14 @@
 
 import FirebaseAuth
 import Firebase
+import FirebaseDatabase
 import FirebaseCore
 import GoogleSignIn
 import Combine
 
 @MainActor
 class AuthViewModel: ObservableObject, AsyncOperationHandler {
+    private var ref: DatabaseReference!
     private let manager = FirebaseManager()
     private let guest = User.dummy()
     
@@ -20,10 +22,12 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     @Published var user: User
     @Published var errorMessage: String? = nil
     @Published var isLoading: Bool = false
+    @Published var chats: [Chat] = []
     
     init(isAuthenticated: Bool, user: User) {
         self.isAuthenticated = isAuthenticated
         self.user = user
+        self.ref = Database.database().reference()
     }
     
     init() {
@@ -31,10 +35,16 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
            let user = try? JSONDecoder().decode(User.self, from: userData) {
             self.user = user
             self.isAuthenticated = true
+            
+            self.ref = Database.database().reference()
         } else {
             self.user = guest
             self.isAuthenticated = false
         }
+    }
+    
+    var currentUserUUID: String? {
+        return Auth.auth().currentUser?.uid
     }
     
     private func setInCtx() {
@@ -245,4 +255,46 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
         try await self.manager.update(collection: .users, id: user.email, object: user)
     }
+    
+    func listUserChats() {
+        guard let currentUser = Auth.auth().currentUser else {
+            print("User is not logged in")
+            return
+        }
+        
+        self.isLoading = true
+        ref.child("chats").observeSingleEvent(of: .value) { [weak self] (snapshot: DataSnapshot) in
+            var fetchedChats: [Chat] = []
+            
+            for case let childSnapshot as DataSnapshot in snapshot.children {
+                if let participants = childSnapshot.childSnapshot(forPath: "participants").value as? [String: Bool],
+                   participants[currentUser.uid] == true {
+                    let messagesSnapshot = childSnapshot.childSnapshot(forPath: "messages")
+                    let messages: [Message] = messagesSnapshot.children.compactMap { messageChild in
+                        guard let messageSnapshot = messageChild as? DataSnapshot,
+                              let messageData = messageSnapshot.value as? [String: Any],
+                              let text = messageData["text"] as? String,
+                              let senderId = messageData["senderId"] as? String,
+                              let timestamp = messageData["timestamp"] as? Double else { return nil }
+                        
+                        return Message(id: messageSnapshot.key, text: text, senderId: senderId, timestamp: timestamp)
+                    }
+                    
+                    let chat = Chat(
+                        id: childSnapshot.key,
+                        participants: participants,
+                        messages: messages
+                    )
+                    fetchedChats.append(chat)
+                }
+            }
+            
+            self?.chats = fetchedChats.sorted { $0.messages.last?.timestamp ?? 0 > $1.messages.last?.timestamp ?? 0 }
+            self?.isLoading = false
+        } withCancel: { [weak self] error in
+            self?.isLoading = false
+        }
+    }
+
+
 }

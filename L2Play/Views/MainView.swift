@@ -42,7 +42,7 @@ struct MainView: View {
                     Image(systemName: "house")
                     Text("Home")
                 }
-            ChatView()
+            ChatListView()
                 .tabItem {
                     Image(systemName: "message.fill")
                     Text("Chat")

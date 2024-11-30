@@ -66,18 +66,20 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         return []
     }
     
-//    private func updateFollowStatus(for u: User) async throws {
-//        var otherUser: User = try await self.manager.read(collection: .users, id: u.email)
-//        
-//        if otherUser.following.contains(user.id) {
-//            otherUser.following.removeAll(where: { $0 == user.id })
-//            user.followers.removeAll(where: { $0 == otherUser.id })
-//        } else {
-//            otherUser.following.append(user.id)
-//            user.followers.append(otherUser.id)
-//        }
-//        
-//        try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
-//        try await self.manager.update(collection: .users, id: user.email, object: user)
-//    }
+
+    func getUserByID(_ userID: String?) async -> User? {
+        guard let userID else {return nil}
+        
+        let result: Result<User, Error> = await performAsyncOperation {
+            let user: User = try await self.manager.read(collection: .users, id: userID)
+            return user
+        }
+        
+        switch result {
+        case .success(let fetchedUser):
+            return fetchedUser
+        case .failure:
+            return nil
+        }
+    }
 }

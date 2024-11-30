@@ -277,6 +277,7 @@ struct ReviewCard: View {
         }
         .onAppear {
             Task {
+                await reviewViewModel.fetchComments()
                 if let user = await userViewModel.fetchUserByEmail(reviewViewModel.review.author.email) {
                     self.userViewModel.user = user
                 }

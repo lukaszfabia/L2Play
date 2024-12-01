@@ -15,7 +15,6 @@ struct EditAccountView: View {
     
     @State private var selectedImage: UIImage? = nil
     @State private var showImagePicker = false
-    let user: User
     
     private let width: CGFloat = 200
     private let height: CGFloat = 200
@@ -23,6 +22,9 @@ struct EditAccountView: View {
     private let firstName_ = NSLocalizedString("First name", comment: "")
     private let lastName_ = NSLocalizedString("Last name", comment: "")
     private let password_ = NSLocalizedString("New Password", comment: "")
+    
+    
+    @EnvironmentObject private var provider: AuthViewModel
     
     var body: some View {
         NavigationStack {
@@ -36,7 +38,7 @@ struct EditAccountView: View {
                             if let image = selectedImage {
                                 LocalImage(pic: image, w: width, h: height)
                             } else {
-                                UserImage(pic: user.profilePicture, w: width, h: height)
+                                UserImage(pic: provider.user.profilePicture, w: width, h: height)
                             }
                             
     
@@ -65,12 +67,12 @@ struct EditAccountView: View {
                         
                         Section(header: Text("Who are you?")
                             .font(.headline).foregroundStyle(.primary)) {
-                                CustomFieldWithIcon(acc: $firstName, placeholder: user.firstName, icon: "person", isSecure: false)
+                                CustomFieldWithIcon(acc: $firstName, placeholder: provider.user.firstName ?? "", icon: "person", isSecure: false)
                                     .keyboardType(.alphabet)
                                     .textInputAutocapitalization(.sentences)
                                 
                                 
-                                CustomFieldWithIcon(acc: $lastName, placeholder: user.firstName, icon: "person", isSecure: false)
+                                CustomFieldWithIcon(acc: $lastName, placeholder: provider.user.lastName ?? "", icon: "person", isSecure: false)
                                     .keyboardType(.alphabet)
                                     .textInputAutocapitalization(.sentences)
                                 
@@ -80,7 +82,7 @@ struct EditAccountView: View {
                         Section(header: Text("Login passes")
                             .font(.headline)
                             .foregroundColor(.primary)){
-                                CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
+                                CustomFieldWithIcon(acc: $email, placeholder: provider.user.email, icon: "envelope", isSecure: false)
                                     .autocorrectionDisabled()
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
@@ -111,10 +113,4 @@ struct EditAccountView: View {
             }
         }
     }
-}
-
-
-
-#Preview {
-    EditAccountView(user: User.dummy())
 }

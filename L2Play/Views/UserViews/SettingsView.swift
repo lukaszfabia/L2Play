@@ -8,20 +8,20 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject var provider : AuthViewModel
-    
+    @EnvironmentObject private var provider: AuthViewModel
+    @EnvironmentObject private var settingsHandler: SettingsHandler
     @State private var showDeleteView: Bool = false
     @State private var showLogoutAlert: Bool = false
     
     var body: some View {
-        NavigationStack{
-            VStack(alignment: .leading){
-                VStack{
-                    HStack{
+        NavigationStack {
+            VStack(alignment: .leading) {
+                VStack {
+                    HStack {
                         UserImage(pic: provider.user.profilePicture, w: 100, h: 100)
                         
-                        VStack{
-                            HStack{
+                        VStack {
+                            HStack {
                                 Text(provider.user.firstName ?? "unknown")
                                     .font(.title2)
                                     .bold()
@@ -38,42 +38,59 @@ struct SettingsView: View {
                     
                     CustomDivider().padding()
                     
-                    
                     VStack {
                         List {
                             Section(header: Text("Account")
                                 .font(.headline)
                                 .foregroundColor(.primary)) {
-                                    NavigationLink(destination: EditAccountView(user: provider.user)){
+                                    NavigationLink(destination: EditAccountView()) {
                                         HStack {
                                             Image(systemName: "person.crop.circle")
                                                 .foregroundColor(.blue)
                                             Text("Edit profile")
-                                            
                                         }
                                     }
-                                    NavigationLink(destination: BlockedPeopleView(user: provider.user)){
+                                    NavigationLink(destination: BlockedPeopleView()) {
                                         HStack {
                                             Image(systemName: "nosign")
                                                 .foregroundColor(.red)
                                             Text("Blocked users")
                                         }
                                     }
-                                    
-                                    // TODO: add change languague 
+                                }
+                            
+                            Section(header: Text("Appearance")
+                                .font(.headline)
+                                .foregroundColor(.primary)) {
+                                    Toggle(isOn: $settingsHandler.isDarkMode) {
+                                        Text("Dark Mode")
+                                    }
+                                }
+                            
+                            Section(header: Text("Language")
+                                .font(.headline)
+                                .foregroundColor(.primary)) {
+                                    Picker("Change Language", selection: $settingsHandler.language) {
+                                        ForEach([Language.english, Language.polish], id: \.self) { lang in
+                                            Text(lang.rawValue)
+                                                .tag(lang.rawValue)
+                                        }
+                                    }
+                                    .pickerStyle(MenuPickerStyle())
                                 }
                             
                             Section(header: Text("Actions")
                                 .font(.headline)
                                 .foregroundColor(.primary)) {
-                                    Button(action: {showLogoutAlert.toggle()}){
+                                    Button(action: { showLogoutAlert.toggle() }) {
                                         HStack {
                                             Image(systemName: "arrow.right.square")
                                                 .foregroundColor(.yellow)
                                             Text("Logout")
                                                 .foregroundColor(.yellow)
                                         }
-                                    }.alert(isPresented: $showLogoutAlert) {
+                                    }
+                                    .alert(isPresented: $showLogoutAlert) {
                                         Alert(
                                             title: Text("Are you sure to logout?"),
                                             message: Text("You will be redirected to the login page"),
@@ -83,29 +100,26 @@ struct SettingsView: View {
                                             secondaryButton: .cancel()
                                         )
                                     }
-                                    Button(action: {showDeleteView.toggle()}){
+                                    
+                                    Button(action: { showDeleteView.toggle() }) {
                                         HStack {
                                             Image(systemName: "trash")
                                                 .foregroundColor(.red)
                                             Text("Remove account")
                                                 .foregroundColor(.red)
                                         }
-                                    }.sheet(isPresented: $showDeleteView, content: {DeleteAccountView()})
+                                    }
+                                    .sheet(isPresented: $showDeleteView, content: { DeleteAccountView() })
                                 }
                         }
                         .listStyle(InsetGroupedListStyle())
                     }
                     .cornerRadius(10)
-                    .navigationTitle("Settings")
+                    .navigationTitle("Hello, \(provider.user.fullName())")
+                    .preferredColorScheme(settingsHandler.currentTheme())
                 }
-            }.padding()
+            }
+            .padding()
         }
     }
-}
-
-#Preview{
-    SettingsView()
-        .environmentObject(AuthViewModel(
-            isAuthenticated: true, user: User.dummy()
-        ))
 }

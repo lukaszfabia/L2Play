@@ -7,43 +7,30 @@
 
 import SwiftUI
 
-struct BlockedUserRow: View {
+
+struct UserRow<RowButton: View>: View {
     let user: User
-    let s: CGFloat = 75 // sizes
-    var body : some View {
+    
+    @ViewBuilder var button: (User) -> RowButton
+    
+    var body: some View {
         HStack {
-            NavigationLink(destination: UserView(user: user)) {
-                UserImage(pic: user.profilePicture, w: s, h: s)
+            UserImage(pic: user.profilePicture)
+            
+            VStack(alignment: .leading) {
+                Text(user.firstName ?? "Unknown")
+                    .font(.title3)
+                    .fontWeight(.semibold)
                 
-                Spacer()
-                
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text(user.firstName ?? "unknown")
-                            .foregroundStyle(.primary)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                        
-                        Text(user.lastName ?? "user")
-                            .foregroundStyle(.secondary)
-                            .font(.title3)
-                    }
-                }
-                
-                Spacer()
+                Text(user.lastName ?? "User")
+                    .foregroundColor(.secondary)
+                    .font(.title3)
             }
+            Spacer()
             
-            
-            ButtonWithIcon(color: .red, text: Text("Unblock"), action: {
-                
-            }, w: 100)
+            button(user)
         }
         .background(Color(.systemGray6))
-        .cornerRadius(40)
-        .padding()
+        .cornerRadius(15)
     }
-}
-
-#Preview {
-    BlockedUserRow(user: .dummy())
 }

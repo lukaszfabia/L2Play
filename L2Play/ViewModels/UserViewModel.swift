@@ -25,7 +25,7 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         return email == user.email
     }
     
-    func fetchUserByEmail(_ email: String) async -> User? {
+    func fetchUserByEmail(_ email: String) async {
         let result: Result<User, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .users, id: email)
         }
@@ -33,11 +33,8 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         switch result {
         case .success(let fetchedUser):
             self.user = fetchedUser
-            return fetchedUser
-        case .failure(let error):
-            self.errorMessage = "Error fetching user: \(error.localizedDescription)"
-            print("\(error.localizedDescription)")
-            return nil
+        case .failure:
+            break
         }
     }
     
@@ -55,11 +52,6 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
             print("Failed to refresh user: \(error.localizedDescription)")
             self.errorMessage = "Failed to refresh user."
         }
-    }
-    
-    func isFollowed(by: User) -> Bool {
-        guard let user else {return false}
-        return by.following.contains(user.id)
     }
     
     func fetchReviewsForUser(user: User) -> [Review] {
@@ -80,6 +72,25 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
             return fetchedUser
         case .failure:
             return nil
+        }
+    }
+    
+    func areYouBlocked(sessionUserID: UUID) -> Bool {
+        guard let user else {return false}
+        return user.blockedUsers.contains(where: {$0 == sessionUserID})
+    }
+    
+    func getAllWithIds(_ ids: [UUID]) async -> [User] {
+        print(ids)
+        let result: Result<[User], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .users, ids: ids)
+        }
+        
+        switch result {
+        case .failure:
+            return []
+        case .success(let fetchedUsers):
+            return fetchedUsers
         }
     }
 }

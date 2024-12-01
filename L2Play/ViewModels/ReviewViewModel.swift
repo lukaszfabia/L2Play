@@ -13,7 +13,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     
     @Published var isLoading: Bool = false
     
-    @Published var user: User
+    @Published var user: User // session user 
     @Published private var game: Game
     @Published var review: Review
     @Published var comments: [Comment] = []
@@ -34,7 +34,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         // potential reveiew for current user
         self.review = Review(review: "", rating: 0, gameID: game.id, author: Author(user: user))
     }
-
+    
     
     var commentsCount: Int {
         return comments.count
@@ -82,7 +82,6 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     
     func deleteReview() {
         self.manager.delete(collection: .reviews, id: review.id.uuidString)
-        //reload view
     }
     
     func addReview(content: String, rating: Int) async {
@@ -100,13 +99,13 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
             self.errorMessage = "Failed to fetch reviews"
             return
         }
-    
+        
         let userReview = reviews.first {$0.author.email == user.email}
         
         if let userReview {
             let old = userReview
             
-
+            
             let updatedReview = Review(oldReview: old, newReview: content, newRating: rating)
             
             let updateResult: Result<_, Error> = await performAsyncOperation {
@@ -122,7 +121,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
             }
             
         } else {
-
+            
             let newReview = Review(review: content, rating: rating, gameID: game.id, author: Author(user: user))
             
             
@@ -139,7 +138,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
             }
         }
     }
-
+    
     
     func fetchComments() async {
         let result: Result<[Comment], Error> = await performAsyncOperation {
@@ -154,8 +153,6 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
             errorMessage = "Failed to fetch comments"
         }
     }
-
-
     
     func addComment(_ comment: String) {
         do {
@@ -164,10 +161,29 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
                 object: Comment(reviewID: review.id, comment: comment, author: Author(user: user))
             )
             
-            comments.append(c)
+            if let index = comments.firstIndex(where: { $0.createdAt < c.createdAt }) {
+                comments.insert(c, at: index)
+            } else {
+                comments.append(c)
+            }
+            
         } catch let err {
             print("Failed to add comment: \(err.localizedDescription)")
             self.errorMessage = "Failed to add comment"
+        }
+    }
+    
+    
+    func reportReview(reason: ReportReason) {
+        self.isLoading = true
+        defer { self.isLoading = false }
+        
+        let newReport = ReportedReview(whoReported: user.id, reason: reason, reviewID: review.id)
+        
+        do {
+            let _ = try self.manager.create(collection: .reported_reviews, object: newReport)
+        } catch {
+            self.errorMessage = "Failed to report review"
         }
     }
 }

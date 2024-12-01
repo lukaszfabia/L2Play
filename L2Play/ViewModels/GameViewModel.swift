@@ -14,7 +14,6 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     
     @Published var isLoading: Bool = false
     
-//    @Published var game: Game
     var game: Game
     @Published private(set) var user: User
     @Published var reviews: [Review] = []
@@ -32,6 +31,20 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func refreshGame() async {
+        let r : Result<_, Error> = await performAsyncOperation {
+            await self.fetchReviewsForGame()
+        }
+        
+        switch r {
+        case .failure(let err):
+            print("Failed to refresh reviews \(err.localizedDescription)")
+            self.errorMessage = "Failed to refresh reviews"
+            break
+        case .success:
+            break
+        }
+        
+        
         let result: Result<Game, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .games, id: self.game.id.uuidString)
         }
@@ -39,9 +52,11 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         switch result {
         case .success(let fetchedGame):
             self.game = fetchedGame
+            break
         case .failure(let error):
             print("Failed to refresh user: \(error.localizedDescription)")
             self.errorMessage = "Failed to refresh game"
+            break
         }
         
     }
@@ -71,9 +86,11 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         switch result {
         case .success:
             self.user = user
+            break
         case .failure(let error):
             print("Failed to update user: \(error.localizedDescription)")
             self.errorMessage = "Failed to update user"
+            break
         }
     }
     
@@ -94,8 +111,21 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         case .failure(let error):
             print("Failed to fetch all reviews: \(error.localizedDescription)")
             self.errorMessage = "Failed to fetch all reviews"
+            break
+            
         case .success(let fetchedReviews):
-            self.reviews = fetchedReviews
+            self.reviews = fetchedReviews.sorted {
+                $0.createdAt > $1.createdAt
+            }
+            
+            // set current user review as a first
+            if let index = self.reviews.firstIndex(where: {$0.author.email == user.email}) {
+                let currUserReivew = self.reviews[index]
+                self.reviews.remove(at: index)
+                self.reviews.insert(currUserReivew, at: 0)
+            }
+            
+            break
         }
     }
     
@@ -135,9 +165,11 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         switch r {
         case .success:
             await refreshGame()
+            break
         case .failure(let error):
             print("Failed to update game: \(error.localizedDescription)")
             self.errorMessage = "Failed to update game"
+            
         }
         
     }

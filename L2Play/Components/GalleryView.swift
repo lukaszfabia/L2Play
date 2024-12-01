@@ -23,9 +23,7 @@ struct GalleryView: View {
                             .cornerRadius(30)
                         
                     } placeholder: {
-                        ProgressView()
-                            .frame(width: 300, height: 400)
-                            .cornerRadius(30)
+                        LoadingView()
                         
                     }
                 }

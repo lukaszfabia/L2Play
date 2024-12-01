@@ -30,7 +30,6 @@ struct UserImage: View {
                             .shadow(radius: 12)
                     } placeholder: {
                         ProgressView()
-                            .frame(width: w, height: h)
                     }
                 } else {
                     Circle()

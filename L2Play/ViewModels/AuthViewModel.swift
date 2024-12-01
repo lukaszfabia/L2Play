@@ -135,17 +135,17 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     
     func continueWithGoogle(presenting viewController: UIViewController) {
         self.isLoading = true
-
+        
         
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             self.errorMessage = "Failed to retrieve client ID."
             self.isLoading = false
             return
         }
-
+        
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
-
+        
         GIDSignIn.sharedInstance.signIn(withPresenting: viewController) { [weak self] result, error in
             guard let self = self else { return }
             
@@ -154,15 +154,15 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
                 self.isLoading = false
                 return
             }
-
+            
             guard let user = result?.user, let idToken = user.idToken?.tokenString else {
                 self.handleAuthError(message: "Failed to retrieve Google token.")
                 self.isLoading = false
                 return
             }
-
+            
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
-
+            
             Auth.auth().signIn(with: credential) { [weak self] result, error in
                 guard let self = self else { return }
                 
@@ -171,13 +171,13 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
                     self.isLoading = false
                     return
                 }
-
+                
                 guard let firebaseUser = result?.user else {
                     self.handleAuthError(message: "Failed to authenticate user.")
                     self.isLoading = false
                     return
                 }
-
+                
                 self.handleUser(user: User(firebaseUser: firebaseUser))
                 DispatchQueue.main.async {
                     self.isLoading = false
@@ -185,7 +185,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             }
         }
     }
-
+    
     
     private func handleAuthError(message: String, error: Error? = nil) {
         DispatchQueue.main.async {
@@ -228,28 +228,22 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         }
     }
     
-    func followUser(_ u: User) async {
-        let result = await performAsyncOperation {
-            try await self.updateFollowStatus(for: u)
-        }
-        
-        switch result {
-        case .success:
-            break
-        case .failure(let error):
-            self.errorMessage = "Failed to follow: \(error.localizedDescription)"
+    func followUser(_ otherUser: User) async {
+        let _ = await performAsyncOperation {
+            try await self.updateFollowStatus(for: otherUser)
         }
     }
     
-    private func updateFollowStatus(for u: User) async throws {
-        var otherUser: User = try await self.manager.read(collection: .users, id: u.email)
+    private func updateFollowStatus(for otherUser: User) async throws {
+        var otherUser: User = try await self.manager.read(collection: .users, id: otherUser.email)
         
-        if otherUser.following.contains(user.id) {
-            otherUser.following.removeAll(where: { $0 == user.id })
-            user.followers.removeAll(where: { $0 == otherUser.id })
+        // we are following preson
+        if user.following.contains(otherUser.id) {
+            otherUser.followers.removeAll(where: { $0 == user.id })
+            user.following.removeAll(where: { $0 == otherUser.id })
         } else {
-            otherUser.following.append(user.id)
-            user.followers.append(otherUser.id)
+            otherUser.followers.append(user.id)
+            user.following.append(otherUser.id)
         }
         
         try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
@@ -295,6 +289,25 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             self?.isLoading = false
         }
     }
-
-
+    
+    func toogleBlockUser(_ otherUserID: UUID) async {
+        
+        if let index = self.user.blockedUsers.firstIndex(where: {$0 == otherUserID}) {
+            self.user.blockedUsers.remove(at: index)
+        } else {
+            self.user.blockedUsers.append(otherUserID)
+        }
+        
+        let result: Result<_, Error> = await performAsyncOperation {
+            try await self.manager.update(collection: .users, id: self.user.email, object: self.user)
+        }
+        
+        switch result {
+        case .success:
+            self.setInCtx()
+            break
+        case .failure:
+            break
+        }
+    }
 }

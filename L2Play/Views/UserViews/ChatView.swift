@@ -134,7 +134,7 @@ struct ChatView: View {
     var body: some View {
         VStack {
             if viewModel.isLoading {
-                ProgressView("Loading chat...")
+                LoadingView()
             } else {
                 ScrollViewReader { scrollView in
                     ScrollView {

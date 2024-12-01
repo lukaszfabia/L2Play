@@ -11,4 +11,5 @@ enum Collections: String {
     case games = "games"
     case authors = "authors"
     case comments = "comments"
+    case reported_reviews = "reported_reviews"
 }

@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseAuth
 
-struct User: Codable, Identifiable {
+struct User: Codable, Identifiable, Hashable {
     var id: UUID = .init()
     var firstName: String?
     var lastName: String?
@@ -22,9 +22,38 @@ struct User: Codable, Identifiable {
     var blockedUsers: [UUID]
     let createdAt: Date
     
-
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(email)
+    }
+    
+    static func == (lhs: User, rhs: User) -> Bool {
+        return lhs.id == rhs.id && lhs.email == rhs.email
+    }
+    
+    func hasBlocked(_ userID: UUID) -> Bool {
+        return blockedUsers.contains(userID)
+    }
+    
+    func isFollowing(_ userID: UUID) -> Bool {
+        return following.contains(userID)
+    }
+    
+    func isFollowed(_ userID: UUID) -> Bool {
+        return followers.contains(userID)
+    }
+    
+    func fullName() -> String {
+        if let firstName, let lastName {
+            return String(describing: "\(firstName) \(lastName)")
+        } else {
+            return String(email.split(separator: "@")[0]) // ufabia03
+        }
+    }
+    
+    
     init(firebaseUser: FirebaseAuth.User) {
-
+        
         if let name = firebaseUser.displayName {
             let components = name.split(separator: " ")
             self.firstName = components.first.map { String($0) }
@@ -34,7 +63,7 @@ struct User: Codable, Identifiable {
             self.lastName = nil
         }
         
-    
+        
         self.email = firebaseUser.email ?? "unknown@example.com"
         if let photoURL = firebaseUser.photoURL {
             self.profilePicture = photoURL
@@ -78,11 +107,11 @@ struct User: Codable, Identifiable {
     
     static func dummy() -> User {
         let url = URL(string: "https://placebeard.it/250/250")!
-    
+        
         return User(firstName: "guest", lastName: "g", email: "guest@example.com", avatar: url, playlist: [], favGames: [], blockedUsers: [], followers: [], following: [])
     }
     
-  
+    
     static private func dummyFriends() -> [User] {
         let url = URL(string: "https://placebeard.it/250/250")!
         

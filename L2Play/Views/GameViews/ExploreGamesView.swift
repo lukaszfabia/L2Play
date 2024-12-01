@@ -56,7 +56,7 @@ struct ExploreGamesView: View {
                         .padding(.horizontal)
                         
                         if gamesViewModel.games.isEmpty {
-                            ProgressView()
+                            LoadingView()
                         } else {
                             LazyVStack(alignment: .leading, spacing: 10) {
                                 ForEach(gamesViewModel.games, id: \.id) { game in

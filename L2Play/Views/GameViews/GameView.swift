@@ -31,7 +31,7 @@ struct GameView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .onDisappear {
                         Task {
-                            await gameViewModel.fetchReviewsForGame()
+                            await gameViewModel.refreshGame()
                         }
                     }
                 }
@@ -123,12 +123,13 @@ struct GameView: View {
             .padding(.bottom, 20)
             
             if !gameViewModel.reviews.isEmpty {
-                LazyVStack {
+                VStack {
                     ForEach(gameViewModel.reviews) { review in
-                        ReviewCard(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game, review: review), reloadGame: gameViewModel.refreshGame).id(review.id)
+                        ReviewView(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game, review: review),refreshGame: gameViewModel.refreshGame)
                     }
                 }
-                .padding()
+                .padding(.horizontal, 5)
+                .padding(.vertical, 10)
             }
         }
     }

@@ -7,12 +7,21 @@
 
 import SwiftUI
 
-struct ProfileHeaderView<FollowSection: View>: View {
+struct ProfileHeaderView<ActionSection: View>: View {
     let user: User
     
-    @ViewBuilder var followSection: () -> FollowSection
+    @ViewBuilder var actionSection: () -> ActionSection
     
     var body: some View {
+        VStack(spacing: 5) {
+            info()
+            
+            actionSection()
+        }
+    }
+    
+    
+    private func info() -> some View {
         HStack {
             VStack(alignment: .leading) {
                 ZStack {
@@ -35,19 +44,23 @@ struct ProfileHeaderView<FollowSection: View>: View {
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
                 
-                Text("Followers")
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.light)
-                +
-                Text(user.followers.count.shorterNumber())
-                    .bold()
+                NavigationLink(destination: FollowView(user: user, title: .followers), label: {
+                    Text("Followers")
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.light)
+                    +
+                    Text(user.followers.count.shorterNumber())
+                        .bold()
+                }).buttonStyle(PlainButtonStyle())
                 
-                Text("Following")
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.light)
-                +
-                Text(user.following.count.shorterNumber())
-                    .bold()
+                NavigationLink(destination: FollowView(user: user, title: .following), label: {
+                    Text("Following")
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.light)
+                    +
+                    Text(user.following.count.shorterNumber())
+                        .bold()
+                }).buttonStyle(PlainButtonStyle())
                 
                 if let res = user.createdAt.getMonthAndYear() {
                     Text("Joined")
@@ -58,10 +71,6 @@ struct ProfileHeaderView<FollowSection: View>: View {
                     Text(res)
                         .bold()
                 }
-                
-                Spacer()
-                
-                followSection()
             }
         }
     }

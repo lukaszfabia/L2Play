@@ -23,7 +23,11 @@ struct MyReviewsView: View {
                 Text("No reviews yet.")
                     .foregroundStyle(.secondary)
             } else {
-                // 
+                ForEach(reviews, id: \.id) { review in
+                    ReviewShowcase(reviewViewModel: ReviewViewModel(user: provider.user, review: review), refreshUser: {Task {
+                        await provider.refreshUser(provider.user)
+                    }})
+                }
             }
         }
     }

@@ -5,6 +5,8 @@
 //  Created by Lukasz Fabia on 01/12/2024.
 //
 
+// TODO: implement as a additional assertion before interacting with blocked user
+
 enum BlockError: Error {
     case userBlocked(message: String)
 }

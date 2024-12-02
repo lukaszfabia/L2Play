@@ -25,10 +25,13 @@ private struct ListUsersView<ButtonRow: View>: View {
     
     @ViewBuilder var button: (User) -> ButtonRow
     
-    init(navigationBarTitle: NavBarTitle, ids: [UUID], @ViewBuilder button: @escaping (User) -> ButtonRow) {
+    private var currentUserID : UUID? = nil
+    
+    init(navigationBarTitle: NavBarTitle, ids: [UUID],currentUserID: UUID? = nil, @ViewBuilder button: @escaping (User) -> ButtonRow) {
         self.navigationBarTitle = navigationBarTitle
         self.ids = ids
         self.button = button
+        self.currentUserID = currentUserID
     }
     
     var body: some View {
@@ -47,12 +50,14 @@ private struct ListUsersView<ButtonRow: View>: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
-
+                
                 
             } else {
                 List(searchResults, id: \.id) { user in
-                    NavigationLink(destination: UserView(user: user)) {
+                    if currentUserID != user.id {
                         UserRow(user: user, button: button)
+                    } else {
+                        UserRow(user: user) { _ in EmptyView()}
                     }
                 }
                 .searchable(text: $searchText)
@@ -86,7 +91,8 @@ struct BlockedPeopleView: View {
         ListUsersView(navigationBarTitle: .blocked, ids: provider.user.blockedUsers) { user in
             Button(role: .destructive) {
                 Task {
-                    await provider.toogleBlockUser(user.id)
+                    var u = user
+                    await provider.toogleBlockUser(&u)
                 }
             } label: {
                 Text("Unblock")
@@ -116,8 +122,8 @@ struct FollowView: View {
     
     
     var body: some View {
-        ListUsersView(navigationBarTitle: title, ids: coll) { user in
-            Button(action: {
+        ListUsersView(navigationBarTitle: title, ids: coll, currentUserID: provider.user.id) { user in
+            Button(role: title == .following || provider.user.isFollowing(user.id) ? .destructive : nil, action: {
                 Task {
                     await provider.followUser(user)
                 }
@@ -130,19 +136,6 @@ struct FollowView: View {
                     Text(provider.user.isFollowing(user.id) ? "Following" : "Follow")
                 }
             }
-            .padding()
-            .background(
-                Group {
-                    if title == .following {
-                        Color.red
-                    } else if provider.user.isFollowing(user.id) {
-                        Color.clear
-                    } else {
-                        Color.accentColor
-                    }
-                }
-            )
-            .cornerRadius(20)
         }
     }
 }

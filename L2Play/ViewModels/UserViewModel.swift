@@ -54,8 +54,17 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         }
     }
     
-    func fetchReviewsForUser(user: User) -> [Review] {
-        return []
+    func fetchReviewsForUser(user: User) async -> [Review] {
+        let r : Result<[Review], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .reviews, whereIs: ("author.email", user.email))
+        }
+        
+        switch r {
+        case .success(let fetchedReviews):
+            return fetchedReviews
+        case .failure:
+            return []
+        }
     }
     
 
@@ -73,11 +82,6 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         case .failure:
             return nil
         }
-    }
-    
-    func areYouBlocked(sessionUserID: UUID) -> Bool {
-        guard let user else {return false}
-        return user.blockedUsers.contains(where: {$0 == sessionUserID})
     }
     
     func getAllWithIds(_ ids: [UUID]) async -> [User] {

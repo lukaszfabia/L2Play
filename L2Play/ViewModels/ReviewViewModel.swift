@@ -14,7 +14,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     @Published var isLoading: Bool = false
     
     @Published var user: User // session user 
-    @Published private var game: Game
+    @Published var game: Game
     @Published var review: Review
     @Published var comments: [Comment] = []
     
@@ -33,6 +33,14 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         
         // potential reveiew for current user
         self.review = Review(review: "", rating: 0, gameID: game.id, author: Author(user: user))
+    }
+    
+    // please fetch game
+    init(user: User, review: Review){
+        self.user = user
+        self.review = review
+        
+        self.game = Game.dummy()
     }
     
     
@@ -184,6 +192,19 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
             let _ = try self.manager.create(collection: .reported_reviews, object: newReport)
         } catch {
             self.errorMessage = "Failed to report review"
+        }
+    }
+    
+    func fetchGameByID() async -> Game? {
+        let r: Result<Game, Error> = await performAsyncOperation {
+            try await self.manager.read(collection: .games, id: self.review.gameID.uuidString)
+        }
+        
+        switch r {
+        case .success(let fetchedGame):
+            return fetchedGame
+        case .failure:
+            return nil
         }
     }
 }

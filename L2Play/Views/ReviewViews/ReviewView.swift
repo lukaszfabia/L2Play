@@ -48,7 +48,7 @@ struct ReactionBar: View {
     }
 }
 
-private struct MenuWithActions: View {
+struct MenuWithActions: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
     
     @State private var selectedReason: ReportReason? = nil
@@ -173,6 +173,44 @@ struct AddCommentView: View {
     }
 }
 
+func oldReviewsView(for oldReviews: [OldReview]) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+        ForEach(oldReviews.reversed(), id: \.id) { old in
+            HStack(spacing: 15) {
+                VStack {
+                    Circle()
+                        .frame(width: 10, height: 10)
+                        .foregroundColor(.accentColor)
+                    Rectangle()
+                        .frame(width: 2, height: 40)
+                        .foregroundColor(.accentColor)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(old.createdAt.timeAgoSinceDate())
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 5) {
+                        Text("\(old.rating)")
+                            .fontWeight(.bold)
+                        Text("/\(RATING_RANGE)")
+                            .foregroundStyle(.gray)
+                        Image(systemName: "star")
+                    }
+                    Text(old.review)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .padding(.top, 2)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+            }
+            .id(old.id)
+        }
+    }
+    .padding(.top, 10)
+}
+
+
 struct ReviewViewDetails: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
     @ObservedObject var userViewModel: UserViewModel
@@ -184,7 +222,9 @@ struct ReviewViewDetails: View {
             ScrollView {
                 ReviewRow(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame, isDetail: true)
                 
-                AddCommentView(reviewViewModel: reviewViewModel)
+                if let u = userViewModel.user, !u.hasBlocked(reviewViewModel.user.id){
+                    AddCommentView(reviewViewModel: reviewViewModel)
+                }
                 
                 ForEach(reviewViewModel.comments) { comment in
                     CommentRow(comment: comment)
@@ -245,7 +285,7 @@ struct CommentRow: View {
 
 struct ReviewRow: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
-    @ObservedObject var userViewModel: UserViewModel
+    @ObservedObject var userViewModel: UserViewModel // author
     
     var refreshGame: () async -> Void
     
@@ -278,45 +318,11 @@ struct ReviewRow: View {
             
             Spacer()
             
-            MenuWithActions(reviewViewModel: reviewViewModel, reload: refreshGame)
-        }
-    }
-    
-    private func oldReviewsView(for oldReviews: [OldReview]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(oldReviews.reversed(), id: \.id) { old in
-                HStack(spacing: 15) {
-                    VStack {
-                        Circle()
-                            .frame(width: 10, height: 10)
-                            .foregroundColor(.accentColor)
-                        Rectangle()
-                            .frame(width: 2, height: 40)
-                            .foregroundColor(.accentColor)
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(old.createdAt.timeAgoSinceDate())
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 5) {
-                            Text("\(old.rating)")
-                                .fontWeight(.bold)
-                            Text("/\(RATING_RANGE)")
-                                .foregroundStyle(.gray)
-                            Image(systemName: "star")
-                        }
-                        Text(old.review)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-                            .padding(.top, 2)
-                    }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal)
-                }
-                .id(old.id)
+            // disable reaction bar when author has blocked current user
+            if let u = userViewModel.user, !u.hasBlocked(reviewViewModel.user.id) {
+                MenuWithActions(reviewViewModel: reviewViewModel, reload: refreshGame)
             }
         }
-        .padding(.top, 10)
     }
     
     var body: some View {
@@ -348,14 +354,16 @@ struct ReviewRow: View {
                 }
             }
             
-            Divider()
-                .padding(.vertical, 5)
-            
-            HStack(spacing: 6) {
-                ReactionBar(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame)
+            if let u = userViewModel.user, !u.hasBlocked(reviewViewModel.user.id) {
+                Divider()
+                    .padding(.vertical, 5)
+                
+                HStack(spacing: 6) {
+                    ReactionBar(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame)
+                }
+                .padding(.horizontal, 5)
+                .padding(.vertical, 20)
             }
-            .padding(.horizontal, 5)
-            .padding(.vertical, 20)
         }.padding(10)
     }
 }

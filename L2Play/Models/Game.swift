@@ -22,6 +22,10 @@ struct Game: Codable, Identifiable {
     let multiplayerSupport: Bool
     let price: Double?
     
+    func getYear() -> String {
+        return "\(String(describing: releaseYear))"
+    }
+    
     
     static func dummy() -> Game {
         return Game(name: "", studio: "", tags: [], pictures: [], description: "", popularity: 0, community: 0, releaseYear: 1970, rating: 0.0, platform: [], multiplayerSupport: false, price: nil)

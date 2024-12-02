@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     // TODO: implement home view, like Twitter or github has
+    
     var body: some View {
         Text("glowna")
     }

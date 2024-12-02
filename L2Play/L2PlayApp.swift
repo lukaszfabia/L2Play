@@ -25,8 +25,6 @@ struct L2PlayApp: App {
                     .environmentObject(accessibility)
                     .environment(\.locale, Locale(identifier: accessibility.language.rawValue))
                     .preferredColorScheme(accessibility.currentTheme())
-                    
-                //                .environmentObject(translator)
             }
         }
     }

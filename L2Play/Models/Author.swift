@@ -30,10 +30,6 @@ struct Author: Codable {
         self.email = user.email
         self.profilePicture = user.profilePicture
         
-        if let fname = user.firstName, let lname = user.lastName {
-            self.name = String(describing: "\(fname) \(lname)")
-        } else {
-            self.name = user.email
-        }
+        self.name = user.fullName()
     }
 }

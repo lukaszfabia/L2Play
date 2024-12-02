@@ -101,7 +101,8 @@ struct UserView: View {
                                     
                                     Button(role: .destructive, action: {
                                         Task {
-                                            await provider.toogleBlockUser(currentUser.id)
+                                            var u = currentUser
+                                            await provider.toogleBlockUser(&u)
                                             
                                             if provider.errorMessage != nil {
                                                 HapticManager.shared.generateErrorFeedback()
@@ -210,9 +211,9 @@ struct UserView: View {
                 .frame(width: 150, height: 40)
                 .background(provider.user.isFollowing(currentUser.id) ? Color.red : Color.accentColor)
                 .cornerRadius(20)
+                .disabled(currentUser.hasBlocked(provider.user.id))
             }
-            .padding(.vertical, 5)
-            .padding(.top, 10)
+            .padding([.vertical, .horizontal], 5)
         }
     }
 
@@ -223,6 +224,7 @@ struct UserView: View {
             await userViewModel.refreshUser()
             favs = await gamesViewModel.fetchFavs(user: currentUser)
             playlist = await gamesViewModel.fetchUsersPlaylist(user: currentUser)
+            reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
         }
     }
 }

@@ -18,19 +18,21 @@ struct UserRow<RowButton: View>: View {
             UserImage(pic: user.profilePicture)
             
             VStack(alignment: .leading) {
-                Text(user.firstName ?? "Unknown")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                
-                Text(user.lastName ?? "User")
-                    .foregroundColor(.secondary)
-                    .font(.title3)
+                NavigationLink(destination: UserView(user: user), label: {
+                    Text(user.firstName ?? "Unknown")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    
+                    Text(user.lastName ?? "User")
+                        .foregroundColor(.secondary)
+                        .font(.title3)
+                })
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
             }
             Spacer()
             
-            button(user)
+            button(user).buttonStyle(BorderedButtonStyle())
         }
-        .background(Color(.systemGray6))
-        .cornerRadius(15)
     }
 }

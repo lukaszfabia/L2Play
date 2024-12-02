@@ -77,6 +77,7 @@ class FirebaseManager {
     }
     
     
+    
     func update<T: Codable & Identifiable>(collection: Collections, id: String, object: T) async throws {
         guard !id.isEmpty else {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "ID was not provided"])

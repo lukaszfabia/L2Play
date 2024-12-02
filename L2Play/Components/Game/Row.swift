@@ -94,7 +94,7 @@ struct FavoriteGamesRow: View {
                             
                             if let y = gameViewModel.game.releaseYear {
                                 Text("|").foregroundStyle(.secondary).font(.subheadline)
-                                Text("\(y, specifier: "%d")")
+                                Text("\(y)")
                                     .font(.subheadline.bold())
                                     .foregroundColor(.secondary)
                             }

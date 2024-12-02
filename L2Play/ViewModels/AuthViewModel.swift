@@ -229,8 +229,17 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func followUser(_ otherUser: User) async {
-        let _ = await performAsyncOperation {
+        guard otherUser != user else {return}
+        
+        let r: Result<_, Error> = await performAsyncOperation {
             try await self.updateFollowStatus(for: otherUser)
+        }
+        
+        switch r {
+        case .success:
+            self.setInCtx()
+        case .failure:
+            break
         }
     }
     
@@ -290,12 +299,27 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         }
     }
     
-    func toogleBlockUser(_ otherUserID: UUID) async {
+    func toogleBlockUser(_ otherUser: inout User) async {
+        guard otherUser != user else {return}
         
-        if let index = self.user.blockedUsers.firstIndex(where: {$0 == otherUserID}) {
+        if let index = self.user.blockedUsers.firstIndex(where: {$0 == otherUser.id}) {
             self.user.blockedUsers.remove(at: index)
         } else {
-            self.user.blockedUsers.append(otherUserID)
+            // append users id to banned acc
+            self.user.blockedUsers.append(otherUser.id)
+            
+            // remove from following persons
+            user.following.removeAll(where: {$0 == otherUser.id})
+            user.followers.removeAll(where: {$0 == otherUser.id})
+            
+            otherUser.following.removeAll(where: {$0 == self.user.id})
+            otherUser.followers.removeAll(where: {$0 == self.user.id})
+            
+            let copy = otherUser
+            
+            let _ = await performAsyncOperation {
+                try await self.manager.update(collection: .users, id: copy.email, object: copy)
+            }
         }
         
         let result: Result<_, Error> = await performAsyncOperation {

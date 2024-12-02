@@ -79,7 +79,7 @@ struct BentoBoxView: View {
                 VStack(alignment: .trailing) {
                     HStack {
                         Image(systemName: "person.2")
-                        Text("Community")
+                        Text("Players")
                             .font(.headline)
                     }
                     

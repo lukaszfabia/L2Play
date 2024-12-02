@@ -37,12 +37,12 @@ struct GameRecommendationView: View {
                             .font(.caption)
                             .foregroundStyle(.gray)
                         
-                        if let y = game.releaseYear {
+                        if let year = game.releaseYear {
                             Text("|")
                                 .font(.caption)
                                 .foregroundStyle(.gray)
                             
-                            Text("\(y)")
+                            Text(String(year))
                                 .font(.caption)
                                 .foregroundStyle(.gray)
                         }

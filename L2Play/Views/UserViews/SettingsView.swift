@@ -115,7 +115,7 @@ struct SettingsView: View {
                         .listStyle(InsetGroupedListStyle())
                     }
                     .cornerRadius(10)
-                    .navigationTitle("Hello, \(provider.user.fullName())")
+                    .navigationTitle("Hello, \(provider.user.fullName().takeFirstWord())!")
                     .preferredColorScheme(settingsHandler.currentTheme())
                 }
             }

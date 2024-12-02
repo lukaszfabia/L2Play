@@ -23,12 +23,13 @@ class GamesViewModel: ObservableObject, AsyncOperationHandler {
     
     func fetchGames(ids: [UUID]? = nil) async -> [Game] {
         let result: Result<[Game], Error> = await performAsyncOperation {
+            // add sorting during fetching from firebase
             return try await self.manager.findAll(collection: .games, ids: ids)
         }
         
         switch result {
         case .success(let games):
-            self.games = games
+            self.games = games.sorted(by: {$0.popularity < $1.popularity})
             return self.games
         case .failure:
             return []

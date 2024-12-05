@@ -22,7 +22,6 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     @Published var user: User
     @Published var errorMessage: String? = nil
     @Published var isLoading: Bool = false
-    @Published var chats: [Chat] = []
     
     init(isAuthenticated: Bool, user: User) {
         self.isAuthenticated = isAuthenticated
@@ -55,7 +54,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     
     func refreshUser(_ user: User) async {
         let result: Result<User, Error>  = await performAsyncOperation {
-            try await self.manager.read(collection: .users, id: user.email)
+            try await self.manager.read(collection: .users, id: user.id)
         }
         
         switch result {
@@ -124,8 +123,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
             
-            if let _ = authResult?.user, error == nil {
-                let u = User(firstName: firstName, lastName: lastName, email: email)
+            if let fu = authResult?.user, error == nil {
+                let u = User(id: fu.uid, firstName: firstName, lastName: lastName, email: email)
                 self.handleUser(user: u)
             } else {
                 self.handleAuthError(message: "Failed to handle user", error: error)
@@ -200,7 +199,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     private func handleUser(user: User) {
         Task {
             let result: Result<User, Error> = await performAsyncOperation {
-                try await self.manager.read(collection: .users, id: user.email)
+                try await self.manager.read(collection: .users, id: user.id)
             }
             
             switch result {
@@ -210,8 +209,21 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
                     self.isAuthenticated = true
                     self.setInCtx()
                 }
-            case .failure(let error):
-                self.handleAuthError(message: "Failed to create user in database.", error: error)
+            case .failure:
+                let r : Result<User, Error> = await performAsyncOperation {
+                    try await self.manager.create(collection: .users, object: user, customID: user.id)
+                }
+                
+                switch r {
+                case .failure(let err):
+                    self.handleAuthError(message: "Error creating user: \(err.localizedDescription)")
+                case .success(let user):
+                    DispatchQueue.main.async {
+                        self.user = user
+                        self.isAuthenticated = true
+                        self.setInCtx()
+                    }
+                }
             }
         }
     }
@@ -229,8 +241,6 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func followUser(_ otherUser: User) async {
-        guard otherUser != user else {return}
-        
         let r: Result<_, Error> = await performAsyncOperation {
             try await self.updateFollowStatus(for: otherUser)
         }
@@ -244,86 +254,25 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     private func updateFollowStatus(for otherUser: User) async throws {
-        var otherUser: User = try await self.manager.read(collection: .users, id: otherUser.email)
+        var copy = otherUser
+        self.user.toggleFollowStatus(&copy)
         
-        // we are following preson
-        if user.following.contains(otherUser.id) {
-            otherUser.followers.removeAll(where: { $0 == user.id })
-            user.following.removeAll(where: { $0 == otherUser.id })
-        } else {
-            otherUser.followers.append(user.id)
-            user.following.append(otherUser.id)
-        }
-        
-        try await self.manager.update(collection: .users, id: otherUser.email, object: otherUser)
-        try await self.manager.update(collection: .users, id: user.email, object: user)
-    }
-    
-    func listUserChats() {
-        guard let currentUser = Auth.auth().currentUser else {
-            print("User is not logged in")
-            return
-        }
-        
-        self.isLoading = true
-        ref.child("chats").observeSingleEvent(of: .value) { [weak self] (snapshot: DataSnapshot) in
-            var fetchedChats: [Chat] = []
-            
-            for case let childSnapshot as DataSnapshot in snapshot.children {
-                if let participants = childSnapshot.childSnapshot(forPath: "participants").value as? [String: Bool],
-                   participants[currentUser.uid] == true {
-                    let messagesSnapshot = childSnapshot.childSnapshot(forPath: "messages")
-                    let messages: [Message] = messagesSnapshot.children.compactMap { messageChild in
-                        guard let messageSnapshot = messageChild as? DataSnapshot,
-                              let messageData = messageSnapshot.value as? [String: Any],
-                              let text = messageData["text"] as? String,
-                              let senderId = messageData["senderId"] as? String,
-                              let timestamp = messageData["timestamp"] as? Double else { return nil }
-                        
-                        return Message(id: messageSnapshot.key, text: text, senderId: senderId, timestamp: timestamp)
-                    }
-                    
-                    let chat = Chat(
-                        id: childSnapshot.key,
-                        participants: participants,
-                        messages: messages
-                    )
-                    fetchedChats.append(chat)
-                }
-            }
-            
-            self?.chats = fetchedChats.sorted { $0.messages.last?.timestamp ?? 0 > $1.messages.last?.timestamp ?? 0 }
-            self?.isLoading = false
-        } withCancel: { [weak self] error in
-            self?.isLoading = false
-        }
+        try await self.manager.update(collection: .users, id: copy.id, object: copy)
+        try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
     }
     
     func toogleBlockUser(_ otherUser: inout User) async {
-        guard otherUser != user else {return}
+        var copy = otherUser
         
-        if let index = self.user.blockedUsers.firstIndex(where: {$0 == otherUser.id}) {
-            self.user.blockedUsers.remove(at: index)
-        } else {
-            // append users id to banned acc
-            self.user.blockedUsers.append(otherUser.id)
-            
-            // remove from following persons
-            user.following.removeAll(where: {$0 == otherUser.id})
-            user.followers.removeAll(where: {$0 == otherUser.id})
-            
-            otherUser.following.removeAll(where: {$0 == self.user.id})
-            otherUser.followers.removeAll(where: {$0 == self.user.id})
-            
-            let copy = otherUser
-            
-            let _ = await performAsyncOperation {
-                try await self.manager.update(collection: .users, id: copy.email, object: copy)
+        // we have blocked so update other user state
+        if self.user.block(who: &copy) {
+            let _: Result<_, Error> = await performAsyncOperation {
+                try await self.manager.update(collection: .users, id: copy.id, object: copy)
             }
         }
         
         let result: Result<_, Error> = await performAsyncOperation {
-            try await self.manager.update(collection: .users, id: self.user.email, object: self.user)
+            try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
         }
         
         switch result {

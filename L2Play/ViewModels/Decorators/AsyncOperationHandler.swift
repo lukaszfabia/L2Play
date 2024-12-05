@@ -37,7 +37,7 @@ extension AsyncOperationHandler {
             self.errorMessage = nil // reset error message 
             return .success(result)
         } catch let err {
-            // TODO: maybe add print message in the future
+            print(err.localizedDescription)
             self.errorMessage = err.localizedDescription
             return .failure(err)
         }

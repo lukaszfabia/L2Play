@@ -1,9 +1,15 @@
 import Foundation
 
 struct Chat {
-    var id: String
-    var participants: [String: Bool]
+    private(set) var id: UUID = .init()
+    var participants: [String: Author] // id - short inffo
     var messages: [Message]
+    
+    init(id: UUID, participants: [String : Author], messages: [Message]) {
+        self.id = id
+        self.participants = participants
+        self.messages = messages
+    }
     
     var lastMessageTimestamp: Double {
             messages.last?.timestamp ?? 0

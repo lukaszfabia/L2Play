@@ -61,8 +61,8 @@ struct BentoBoxView: View {
                     }
                     
                     
-                    if let price = game.price {
-                        Text(String(format: "%.2f", price))
+                    if game.price != "Free" {
+                        Text(game.price)
                             .font(.title)
                             .fontWeight(.semibold)
                     } else {

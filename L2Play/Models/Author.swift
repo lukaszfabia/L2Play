@@ -9,27 +9,27 @@ import Foundation
 
 /// For denormalization purposes
 struct Author: Codable {
-    let email: String
-    let name: String // lukasz + fabia (first + last name)
+    let id: String
+    let name: String // full name
     let profilePicture: URL?
     
-    /// Also you can use name as email
-    init(email: String, name: String, profilePicture: URL?) {
-        self.email = email
-        self.profilePicture = profilePicture
+    init(id: String, name: String, profilePicture: URL?) {
+        self.id = id
         self.name = name
+        self.profilePicture = profilePicture
     }
     
-    init(email: String, firstName: String, lastName: String, profilePicture: URL?) {
-        self.email = email
-        self.profilePicture = profilePicture
-        self.name = String(describing: "\(firstName) \(lastName)")
+    init(id: String, name: String, profilePicture: String?) {
+        let url = profilePicture.flatMap { URL(string: $0) }
+        self.init(id: id, name: name, profilePicture: url)
+    }
+    
+    init(id: String, firstName: String, lastName: String, profilePicture: URL?) {
+        let fullName = "\(firstName) \(lastName)"
+        self.init(id: id, name: fullName, profilePicture: profilePicture)
     }
     
     init(user: User) {
-        self.email = user.email
-        self.profilePicture = user.profilePicture
-        
-        self.name = user.fullName()
+        self.init(id: user.id, name: user.fullName(), profilePicture: user.profilePicture)
     }
 }

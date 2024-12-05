@@ -29,7 +29,7 @@ struct ReactionBar: View {
                     HapticManager.shared.generateHapticFeedback(style: .light)
                 }
             }) {
-                Image(systemName: reviewViewModel.hasUserReacted(for: \.likes) ? "heart.fill" : "heart")
+                Image(systemName: reviewViewModel.review.isLiked(by: reviewViewModel.user.id) ? "heart.fill" : "heart")
                 Text("\(reviewViewModel.review.likes.count.shorterNumber())")
             }
             
@@ -37,7 +37,7 @@ struct ReactionBar: View {
                 await reviewViewModel.dislike()
                 HapticManager.shared.generateHapticFeedback(style: .light)
             }}) {
-                Image(systemName: reviewViewModel.hasUserReacted(for: \.dislikes) ?  "hand.thumbsdown.fill" : "hand.thumbsdown")
+                Image(systemName: reviewViewModel.review.isDisliked(by: reviewViewModel.user.id) ?  "hand.thumbsdown.fill" : "hand.thumbsdown")
                 if reviewViewModel.review.dislikes.count == 0 {
                     Text("0")
                 } else {
@@ -58,7 +58,7 @@ struct MenuWithActions: View {
     
     var body: some View {
         Menu {
-            if reviewViewModel.user.email == reviewViewModel.review.author.email {
+            if reviewViewModel.user.id == reviewViewModel.review.author.id {
                 Button(role: .destructive, action: {
                     reviewViewModel.deleteReview()
                     Task {
@@ -238,7 +238,7 @@ struct ReviewViewDetails: View {
         .onAppear {
             Task {
                 await reviewViewModel.fetchComments()
-                await userViewModel.fetchUserByEmail(reviewViewModel.review.author.email)
+                await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
             }
         }
         .onDisappear {
@@ -276,7 +276,7 @@ struct CommentRow: View {
             Spacer()
         }.onAppear() {
             Task {
-                await userViewModel.fetchUserByEmail(comment.author.email)
+                await userViewModel.fetchUser(with: comment.author.id)
             }
         }
     }
@@ -384,7 +384,7 @@ struct ReviewView: View {
             .onAppear(){
                 Task {
                     await reviewViewModel.fetchComments()
-                    await userViewModel.fetchUserByEmail(reviewViewModel.review.author.email)
+                    await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
                 }
             }
             .padding(5)

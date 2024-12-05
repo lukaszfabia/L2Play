@@ -54,7 +54,7 @@ struct MainView: View {
                     Text("Profile")
                         .foregroundStyle(Color.primary)
                 }
-            ExploreGamesView()
+            ExploreGamesView(user: provider.user)
                 .tabItem {
                     Image(systemName: "magnifyingglass")
                     Text("Explore")

@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct ExploreGamesView: View {
-    @EnvironmentObject private var provider: AuthViewModel
+//    @EnvironmentObject private var provider: AuthViewModel
+    @StateObject private var userViewModel: UserViewModel
     @State private var filteredGames: [Game] = []
-    @StateObject private var gamesViewModel = GamesViewModel()
+    @State private var games: [Game] = []
+    @State private var recommendations: [Item] = []
     @State private var searchText: String = ""
     @State private var navigateToSearchResults = false
-    @State private var sortOrder: SortOrder = .ascending
+    
+    init(user: User) {
+        self._userViewModel = StateObject(wrappedValue: UserViewModel(user: user))
+    }
     
     var body: some View {
         NavigationStack {
@@ -24,15 +29,16 @@ struct ExploreGamesView: View {
                         .font(.title)
                         .padding(.horizontal)
                     
-                    if gamesViewModel.recommendedGames.isEmpty {
+                    if recommendations.isEmpty {
                         Text("There is no recommendations for you yet.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .padding()
                     } else {
-                        CustomPageSlider(data: $gamesViewModel.recommendedGames) { $item in
-                            NavigationLink(destination: GameView(gameViewModel: GameViewModel(game: item.game, user: provider.user))) {
-                                GameRecommendationView(game: item.game)
+                        CustomPageSlider(data: $recommendations) { $item in
+                            NavigationLink(
+                                destination: LazyGameView(gameID: item.game.id, userViewModel: userViewModel)) {
+                                    GameRecommendationView(game: item.game)
                             }
                         } titleContent: { $item in
                             VStack(spacing: 10) {
@@ -66,18 +72,18 @@ struct ExploreGamesView: View {
         }
         .onAppear {
             Task {
-                await gamesViewModel.fetchGames()
+                games = await userViewModel.fetchGames()
+                recommendations = await userViewModel.fetchRecommendedGames()
             }
         }
     }
     
     private func applyFilters() {
-        filteredGames = gamesViewModel.games.filter { game in
+        filteredGames = games.filter { game in
             game.name.lowercased().contains(searchText.lowercased()) ||
             game.tags.contains(where: { $0.lowercased().contains(searchText.lowercased()) }) ||
-            game.studio.contains(where: { $0.lowercased().contains(searchText.lowercased()) })
+            game.studio.lowercased().contains(searchText.lowercased())
         }
-        .sorted { sortOrder == .ascending ? $0.name < $1.name : $0.name > $1.name }
     }
     
     private func searching() -> some View {
@@ -93,14 +99,13 @@ struct ExploreGamesView: View {
             
             LazyVStack(alignment: .leading, spacing: 10) {
                 ForEach(filteredGames, id: \.id) { game in
-                    GameRow(gameViewModel: GameViewModel(game: game, user: provider.user))
+                    GameRow(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
                 }
             }
             .padding([.horizontal, .top], 20)
         }
         .onAppear { applyFilters() }
         .onChange(of: searchText) { applyFilters() }
-        .onChange(of: sortOrder) { applyFilters() }
     }
     
     
@@ -115,12 +120,12 @@ struct ExploreGamesView: View {
             }
             .padding(.horizontal)
             
-            if gamesViewModel.games.isEmpty {
+            if games.isEmpty {
                 LoadingView()
             } else {
                 LazyVStack(alignment: .leading, spacing: 10) {
-                    ForEach(gamesViewModel.games, id: \.id) { game in
-                        GameRow(gameViewModel: GameViewModel(game: game, user: provider.user))
+                    ForEach(games, id: \.id) { game in
+                        GameRow(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
                     }
                 }
                 .padding([.horizontal, .top], 20)

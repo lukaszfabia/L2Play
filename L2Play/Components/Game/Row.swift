@@ -66,36 +66,29 @@ struct GameRow: View {
 }
 
 struct FavoriteGamesRow: View {
-    var gameViewModel: GameViewModel
+    let game: GameWithState
     
     var body: some View {
-        NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {
-            VStack {
-                HStack(spacing: 20) {
-                    GameCover(cover: gameViewModel.game.pictures[0])
+        VStack {
+            HStack(spacing: 20) {
+                GameCover(cover: game.pic)
+                
+                
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(game.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
                     
-                    
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack (spacing: 10) {
-                            RatingComponent(rating: gameViewModel.game.rating)
-                            
-                        }.padding(.bottom, 5)
-                        
-                        Text(gameViewModel.game.name)
+                    HStack(spacing: 5) {
+                        Text(game.studio)
                             .font(.subheadline)
-                            .foregroundStyle(.primary)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                        
-                        HStack(spacing: 5) {
-                            Text(gameViewModel.game.studio)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+                            .foregroundColor(.secondary)
                     }
-                    
-                    Spacer()
                 }
+                
+                Spacer()
             }
         }
         .foregroundStyle(Color.primary)

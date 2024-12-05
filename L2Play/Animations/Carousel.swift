@@ -13,9 +13,9 @@ struct Item: Identifiable {
     var color: Color
     var title: String
     var subTitle: String
-    var game: Game
+    var game: GameWithState
     
-    init(game: Game) {
+    init(game: GameWithState) {
         self.title = ""
         self.subTitle = ""
         self.game = game

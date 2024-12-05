@@ -2,58 +2,134 @@
 //  User.swift
 //  L2Play
 //
-//  Created by Lukasz Fabia on 21/11/2024.
+//  Created by Lukasz Fabia on 23/11/2024.
 //
 
 import Foundation
 import FirebaseAuth
 
-struct User: Codable, Identifiable, Hashable {
-    var id: UUID = .init()
+class User: Codable, Identifiable, Hashable {
+    let id: String
     var firstName: String?
     var lastName: String?
     var email: String
-    let profilePicture: URL?
-    // swap on uuid
-    var followers: [UUID]
-    var following: [UUID]
-    var playlist: [UUID]
-    var favGames: [UUID]
-    var blockedUsers: [UUID]
+    var profilePicture: URL?
+    var followers: [String]
+    var following: [String]
+    var games: [GameWithState]
+    var blockedUsers: [String]
     let createdAt: Date
+    var chats: [String]
     
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(email)
-    }
+    // MARK: - Hashable & Equatable
+    static func ==(lhs: User, rhs: User) -> Bool {
+         return lhs.id == rhs.id
+     }
+
+     func hash(into hasher: inout Hasher) {
+         hasher.combine(id)
+     }
     
-    static func == (lhs: User, rhs: User) -> Bool {
-        return lhs.id == rhs.id && lhs.email == rhs.email
-    }
-    
-    func hasBlocked(_ userID: UUID) -> Bool {
+    // MARK: - Helper Methods
+    func hasBlocked(_ userID: String) -> Bool {
         return blockedUsers.contains(userID)
     }
     
-    func isFollowing(_ userID: UUID) -> Bool {
+    func isFollowing(_ userID: String) -> Bool {
         return following.contains(userID)
     }
     
-    func isFollowed(_ userID: UUID) -> Bool {
+    func isFollowed(_ userID: String) -> Bool {
         return followers.contains(userID)
     }
     
     func fullName() -> String {
         if let firstName, let lastName {
-            return String(describing: "\(firstName) \(lastName)")
+            return "\(firstName) \(lastName)"
         } else {
-            return String(email.split(separator: "@")[0]) // ufabia03
+            return String(email.split(separator: "@")[0])
+        }
+    }
+    
+    func toggleGame(game: Game, state: GameState) {
+        if let i = games.firstIndex(where: {$0.name == game.name}) {
+            games[i].changeState(to: state)
+        } else {
+            let newGame = GameWithState(game: game, state: state)
+            games.append(newGame)
+        }
+    }
+    
+    func splitOnDate(with state: GameState) -> [Int: [GameWithState]] {
+        var dict: [Int: [GameWithState]] = [:]
+        
+        for game in games where game.state == state {
+            let year = game.updatedAt.getYear()
+            dict[year, default: []].append(game)
+        }
+        
+        return dict
+    }
+
+    
+    func splitByState() -> [GameState: [GameWithState]] {
+        return Dictionary(grouping: games, by: { $0.state })
+    }
+
+    
+    func toggleFollowStatus(_ otherUser: inout User) {
+        guard self != otherUser else { return }
+        
+        if isFollowing(otherUser.id) {
+            print("odfolowujemy")
+            following.removeAll(where: {$0 == otherUser.id})
+            otherUser.followers.removeAll(where: {$0 == id})
+        } else {
+            print("Stared following kogos tam")
+            following.append(otherUser.id)
+            otherUser.followers.append(id)
         }
     }
     
     
-    init(firebaseUser: FirebaseAuth.User) {
+    // during removing returns false
+    // during blocking returns true
+    func block(who otherUser: inout User) -> Bool {
+        guard self != otherUser else {return false}
         
+        if hasBlocked(otherUser.id) {
+            blockedUsers.removeAll(where: {$0 == otherUser.id})
+            return false
+        } else {
+            blockedUsers.append(otherUser.id)
+            
+            // add skutki blocku
+            
+            // out followersi
+            following.removeAll(where: {$0 == otherUser.id})
+            followers.removeAll(where: {$0 == otherUser.id})
+            
+            otherUser.following.removeAll(where: {$0 == id})
+            otherUser.followers.removeAll(where: {$0 == id})
+            
+            // out wiadmosci
+            // TODO
+            
+            return true
+        }
+    }
+    
+    func getCurrentGameState(where id: UUID) -> GameState {
+        if let i = games.firstIndex(where: {$0.gameID == id}) {
+            return games[i].state
+        } else {
+            return .notPlayed
+        }
+    }
+    
+    // MARK: - Initializers
+    init(firebaseUser: FirebaseAuth.User) {
+        self.id = firebaseUser.uid
         if let name = firebaseUser.displayName {
             let components = name.split(separator: " ")
             self.firstName = components.first.map { String($0) }
@@ -62,73 +138,33 @@ struct User: Codable, Identifiable, Hashable {
             self.firstName = nil
             self.lastName = nil
         }
-        
-        
         self.email = firebaseUser.email ?? "unknown@example.com"
-        if let photoURL = firebaseUser.photoURL {
-            self.profilePicture = photoURL
-        } else {
-            self.profilePicture = nil
-        }
-        
+        self.profilePicture = firebaseUser.photoURL
         self.followers = []
         self.following = []
-        self.playlist = []
-        self.favGames = []
+        self.games = []
         self.blockedUsers = []
-        self.createdAt = Date() // timestamp create
+        self.chats = []
+        self.createdAt = Date()
     }
     
-    init(firstName: String, lastName: String, email: String, avatar: URL? = nil) {
+    init(id: String, firstName: String, lastName: String, email: String, avatar: URL? = nil) {
+        self.id = id
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
         self.profilePicture = avatar
         self.followers = []
         self.following = []
-        self.playlist = []
-        self.favGames = []
+        self.games = []
         self.blockedUsers = []
+        self.chats = []
         self.createdAt = Date()
     }
     
-    init(firstName: String, lastName: String, email: String, avatar: URL, playlist: [UUID], favGames: [UUID], blockedUsers: [UUID], followers: [UUID], following: [UUID]) {
-        self.firstName = firstName
-        self.lastName = lastName
-        self.email = email
-        self.profilePicture = avatar
-        self.followers = followers
-        self.following = following
-        self.playlist = playlist
-        self.favGames = favGames
-        self.blockedUsers = blockedUsers
-        self.createdAt = Date()
-    }
-    
+    // MARK: - Dummy User
     static func dummy() -> User {
         let url = URL(string: "https://placebeard.it/250/250")!
-        
-        return User(firstName: "guest", lastName: "g", email: "guest@example.com", avatar: url, playlist: [], favGames: [], blockedUsers: [], followers: [], following: [])
-    }
-    
-    
-    static private func dummyFriends() -> [User] {
-        let url = URL(string: "https://placebeard.it/250/250")!
-        
-        let friend1 = User(
-            firstName: "Marry",
-            lastName: "Jane",
-            email: "marry.jane@example.com",
-            avatar: url
-        )
-        
-        let friend2 = User(
-            firstName: "Joe",
-            lastName: "Doe",
-            email: "joe.doe@example.com",
-            avatar: url
-        )
-        
-        return [friend1, friend2]
+        return User(id: "asb", firstName: "guest", lastName: "g", email: "guest@example.com", avatar: url)
     }
 }

@@ -29,6 +29,6 @@ struct MyReviewsView: View {
                     }})
                 }
             }
-        }
+        }.padding()
     }
 }

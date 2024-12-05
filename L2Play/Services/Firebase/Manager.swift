@@ -92,18 +92,12 @@ class FirebaseManager {
        db.collection(collection.rawValue).document(id).delete()
     }
     
-    func findAll<T: Codable & Identifiable>(collection: Collections, ids: [UUID]? = nil) async throws -> [T] {
+    func findAll<T: Codable & Identifiable>(collection: Collections, ids: [String]? = nil) async throws -> [T] {
         var query: Query = db.collection(collection.rawValue)
         
         if let uids = ids {
-            // no filters
-            if uids.isEmpty {
-                return []
-            }
-            
-            let stringIds = uids.map { $0.uuidString }
-            if !stringIds.isEmpty {
-                query = query.whereField("id", in: stringIds)
+            if !uids.isEmpty {
+                query = query.whereField("id", in: uids)
             }
         }
         

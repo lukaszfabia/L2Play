@@ -51,4 +51,12 @@ extension Date {
         
         return nil
     }
+    
+    func getYear() -> Int {
+        let dateFormatter = DateFormatter()
+        
+        dateFormatter.setLocalizedDateFormatFromTemplate("rrrr")
+        
+        return Int(dateFormatter.string(from: self))!
+    }
 }

@@ -46,12 +46,12 @@ let reportReasons : [ReportReason] = [
 
 struct ReportedReview: Codable, Identifiable {
     private(set) var id: UUID = .init()
-    private let whoReported: UUID
+    private let whoReported: String
     let createdAt: Date
     let reason: ReportReason
     let reviewID: UUID
     
-    init(whoReported: UUID, reason: ReportReason, reviewID: UUID) {
+    init(whoReported: String, reason: ReportReason, reviewID: UUID) {
         self.id = .init()
         self.whoReported = whoReported
         self.createdAt = Date()

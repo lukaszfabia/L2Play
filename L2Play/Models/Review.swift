@@ -19,55 +19,76 @@ struct OldReview: Codable, Identifiable {
         self.review = review
         self.rating = rating
     }
+    
+    init(review: Review) {
+        self.id = review.id
+        self.createdAt = review.createdAt
+        self.review = review.review
+        self.rating = review.rating
+    }
 }
 
-
-/// Represents review
-struct Review: Codable, Identifiable {
-    private(set) var id: UUID = .init()
+class Review: Codable, Identifiable {
+    var id: UUID
     let createdAt: Date
-    let updatedAt: Date
-    let review: String
-    let oldReviews: [OldReview]
-    let rating: Int
+    var updatedAt: Date
+    var review: String
+    var oldReviews: [OldReview]
+    var rating: Int
     var author: Author
     let gameID: UUID
-    var likes: [UUID]
-    var dislikes: [UUID]
-    let commentsIDs: [UUID]
-    
-    // when its created
+    var likes: [String]
+    var dislikes: [String]
+    var commentsIDs: [String]
+
+    // MARK: - Initializers
     init(review: String, rating: Int, gameID: UUID, author: Author) {
-        self.id = .init()
+        self.id = UUID()
         self.createdAt = Date()
         self.updatedAt = Date()
         self.review = review
         self.oldReviews = []
         self.rating = rating
         self.gameID = gameID
-        self.commentsIDs = []
         self.author = author
-        self.dislikes = []
         self.likes = []
+        self.dislikes = []
+        self.commentsIDs = []
     }
     
-    // when its updated
-    init(oldReview: Review, newReview: String, newRating: Int) {
-        self.createdAt = oldReview.createdAt
-        self.id = oldReview.id
-        self.commentsIDs = oldReview.commentsIDs
-        self.updatedAt = Date()
-        self.gameID = oldReview.gameID
-        self.author = oldReview.author
-        self.likes = oldReview.likes
-        self.dislikes = oldReview.dislikes
-        
-        let old = OldReview(createdAt: oldReview.updatedAt, review: oldReview.review, rating: oldReview.rating)
-        
-        self.oldReviews = oldReview.oldReviews + [old] 
-        
-        self.rating = newRating
+    convenience init(user: User, gameID: UUID) {
+        self.init(review: "", rating: 0, gameID: gameID, author: Author(user: user))
+    }
+    
+    // MARK: - Methods
+    
+    func updateReview(newReview: String, newRating: Int) {
+        self.oldReviews.append(OldReview(review: self))
         self.review = newReview
+        self.rating = newRating
+        
+        self.updatedAt = Date()
     }
 
+    func like(by userID: String) {
+        if !likes.contains(userID) {
+            likes.append(userID)
+            dislikes.removeAll { $0 == userID }
+        }
+    }
+
+    func dislike(by userID: String) {
+        if !dislikes.contains(userID) {
+            dislikes.append(userID)
+            likes.removeAll { $0 == userID }
+        }
+    }
+
+    func isLiked(by userID: String) -> Bool {
+        return likes.contains(userID)
+    }
+
+    func isDisliked(by userID: String) -> Bool {
+        return dislikes.contains(userID)
+    }
 }

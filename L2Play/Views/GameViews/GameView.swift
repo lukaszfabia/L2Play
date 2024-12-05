@@ -6,12 +6,12 @@
 //
 
 import SwiftUI
-
 struct GameView: View {
     @EnvironmentObject private var provider: AuthViewModel
     @StateObject var gameViewModel: GameViewModel
+    
     @State private var isPresentedReviewForm: Bool = false
-    @State private var onlist: Bool = false
+    @State private var selectedState: GameState = .notPlayed
     @State private var fav: Bool = false
     
     var body: some View {
@@ -23,8 +23,7 @@ struct GameView: View {
             .sheet(isPresented: $isPresentedReviewForm) {
                 NavigationStack {
                     ReviewForm(
-                        reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game),
-                        updateGameRating: gameViewModel.updateGameRating,
+                        gv: gameViewModel,
                         closeForm: $isPresentedReviewForm
                     )
                     .navigationTitle("Create Review")
@@ -37,67 +36,24 @@ struct GameView: View {
                 }
             }
             .onAppear {
-                onlist = gameViewModel.isOnList()
-                fav = gameViewModel.isFav()
-
+                selectedState = provider.user.getCurrentGameState(where: gameViewModel.game.id)
                 Task {
                     await gameViewModel.fetchReviewsForGame()
                 }
             }
             .navigationTitle("Game")
-
     }
     
     private func Game() -> some View {
         ScrollView {
-            
             GalleryView(images: gameViewModel.game.pictures)
                 .padding(.top)
             
             Spacer(minLength: 20)
             
+            gameHeaderView
             
-            VStack(alignment: .center) {
-                Text(gameViewModel.game.name)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                HStack {
-                    if let year = gameViewModel.game.releaseYear {
-                        Text(String(year))
-                            .foregroundStyle(.gray)
-                    }
-                    Text(gameViewModel.game.studio)
-                        .foregroundStyle(.gray)
-                }
-            }
-            .padding(.horizontal)
-            
-            HStack(spacing: 20) {
-                Button(action: toggleGameState) {
-                    Image(systemName: onlist ? "checkmark" : "plus")
-                        .font(.system(size: 20))
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(onlist ? Color.green.gradient : Color.accentColor.gradient)
-                        .clipShape(Circle())
-                        .shadow(
-                            color: onlist ? .green.opacity(0.4) : .accentColor.opacity(0.4),
-                            radius: 5, x: 0, y: 5
-                        )
-                }
-                
-                Divider()
-                
-                Button(action: toggleFavState) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(fav ? .red : .white)
-                        .padding()
-                        .background(fav ? Color.white.gradient : Color.red.gradient)
-                        .clipShape(Circle())
-                        .shadow(color: fav ? .white.opacity(0.4) : .red.opacity(0.4), radius: 5, x: 0, y: 5)
-                }
-            }
+            statePicker
             
             Spacer(minLength: 40)
             
@@ -105,27 +61,15 @@ struct GameView: View {
             
             Spacer(minLength: 40)
             
-            Button(action: {
-                isPresentedReviewForm.toggle()
-            }) {
-                Text("Write review")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .foregroundColor(.primary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 25)
-                            .stroke(Color.primary, lineWidth: 2)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 20)
+            writeReviewButton
             
             if !gameViewModel.reviews.isEmpty {
                 VStack {
                     ForEach(gameViewModel.reviews) { review in
-                        ReviewView(reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game, review: review),refreshGame: gameViewModel.refreshGame)
+                        ReviewView(
+                            reviewViewModel: ReviewViewModel(user: provider.user, game: gameViewModel.game, review: review),
+                            refreshGame: gameViewModel.refreshGame
+                        )
                     }
                 }
                 .padding(.horizontal, 5)
@@ -134,24 +78,66 @@ struct GameView: View {
         }
     }
     
-    private func toggleGameState() {
-        Task {
-            await gameViewModel.toggleGameState()
-            await MainActor.run {
-                withAnimation {
-                    onlist = gameViewModel.isOnList()
-                }
+    private var gameHeaderView: some View {
+        VStack(alignment: .center) {
+            Text(gameViewModel.game.name)
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            HStack {
+                Text(gameViewModel.game.releaseYear)
+                    .foregroundStyle(.gray)
+                
+                Text(gameViewModel.game.studio)
+                    .foregroundStyle(.gray)
             }
-            HapticManager.shared.generateHapticFeedback(style: .light)
         }
+        .padding(.horizontal)
     }
     
-    private func toggleFavState() {
+    private var statePicker: some View {
+        VStack {
+            Picker("State", selection: $selectedState) {
+                ForEach(GameState.allCases.prefix(GameState.allCases.count / 2)) { state in
+                    Text(state.rawValue.capitalized).tag(state)
+                }
+            }
+            .pickerStyle(.segmented)
+            
+            Picker("State", selection: $selectedState) {
+                ForEach(GameState.allCases.suffix(GameState.allCases.count / 2)) { state in
+                    Text(state.rawValue.capitalized).tag(state)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(.horizontal)
+        .onChange(of: selectedState) { updateGameState(selectedState) }
+    }
+
+    
+    private var writeReviewButton: some View {
+        Button(action: { isPresentedReviewForm.toggle() }) {
+            Text("Write review")
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .foregroundColor(.primary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(Color.primary, lineWidth: 2)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+        }
+        .padding(.horizontal, 40)
+        .padding(.bottom, 20)
+    }
+    
+    private func updateGameState(_ newState: GameState) {
         Task {
-            await gameViewModel.toogleFavGameState()
+            await gameViewModel.addGame(state: newState)
             await MainActor.run {
                 withAnimation {
-                    fav = gameViewModel.isFav()
+                    selectedState = newState
                 }
             }
             HapticManager.shared.generateHapticFeedback(style: .light)

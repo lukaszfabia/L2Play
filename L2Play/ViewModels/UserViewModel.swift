@@ -11,7 +11,7 @@ import Foundation
 class UserViewModel: ObservableObject, AsyncOperationHandler {
     private let manager: FirebaseManager = FirebaseManager()
     
-    @Published var user: User? = nil
+    @Published var user: User?
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
 
@@ -20,29 +20,12 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         self.user = user
     }
     
-    func isAuth(_ email: String) -> Bool {
-        guard let user else { return false }
-        return email == user.email
-    }
-    
-    func fetchUserByEmail(_ email: String) async {
-        let result: Result<User, Error> = await performAsyncOperation {
-            try await self.manager.read(collection: .users, id: email)
-        }
-        
-        switch result {
-        case .success(let fetchedUser):
-            self.user = fetchedUser
-        case .failure:
-            break
-        }
-    }
     
     func refreshUser() async {
-        guard let user else {return}
+        guard let user else { return }
         
         let result: Result<User, Error> = await performAsyncOperation {
-            try await self.manager.read(collection: .users, id: user.email)
+            try await self.manager.read(collection: .users, id: user.id)
         }
         
         switch result {
@@ -56,7 +39,7 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     
     func fetchReviewsForUser(user: User) async -> [Review] {
         let r : Result<[Review], Error> = await performAsyncOperation {
-            try await self.manager.findAll(collection: .reviews, whereIs: ("author.email", user.email))
+            try await self.manager.findAll(collection: .reviews, whereIs: ("author.id", user.id))
         }
         
         switch r {
@@ -68,24 +51,28 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     }
     
 
-    func getUserByID(_ userID: String?) async -> User? {
-        guard let userID else {return nil}
+    func fetchUser(with id: String?) async {
+        guard let id else {return}
         
         let result: Result<User, Error> = await performAsyncOperation {
-            let user: User = try await self.manager.read(collection: .users, id: userID)
+            let user: User = try await self.manager.read(collection: .users, id: id)
             return user
         }
         
         switch result {
         case .success(let fetchedUser):
-            return fetchedUser
+            self.user = fetchedUser
+            break
         case .failure:
-            return nil
+            break
         }
     }
     
-    func getAllWithIds(_ ids: [UUID]) async -> [User] {
-        print(ids)
+    func getAllWithIds(_ ids: [String]) async -> [User] {
+        if ids.isEmpty {
+            return []
+        }
+        
         let result: Result<[User], Error> = await performAsyncOperation {
             try await self.manager.findAll(collection: .users, ids: ids)
         }
@@ -96,5 +83,41 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         case .success(let fetchedUsers):
             return fetchedUsers
         }
+    }
+    
+    // use it on explore view
+    func fetchGames() async -> [Game] {
+        let result: Result<[Game], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .games)
+        }
+        
+        switch result {
+        case .success(let success):
+            return success
+        case .failure:
+            return []
+        }
+    }
+    
+    func fetchGame(with id: UUID) async -> Game? {
+        let result: Result<Game, Error> = await performAsyncOperation {
+            try await self.manager.read(collection: .games, id: id.uuidString)
+        }
+        
+        switch result {
+        case .success(let success):
+            return success
+        case .failure:
+            return nil
+        }
+        
+    }
+    
+    func fetchRecommendedGames() async -> [Item] {
+        return []
+    }
+    
+    func getReceiverID(for chat: Chat, currentUserID: String) -> String? {
+        return chat.participants.keys.first { $0 != currentUserID }
     }
 }

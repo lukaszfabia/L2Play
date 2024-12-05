@@ -6,13 +6,12 @@
 //
 
 import SwiftUI
+
 struct UserView: View {
     @EnvironmentObject private var provider: AuthViewModel // for me
-    @StateObject private var gamesViewModel: GamesViewModel = GamesViewModel()
     @StateObject private var userViewModel: UserViewModel
 
     @State private var favs: [Item] = []
-    @State private var playlist: [Game] = []
     @State private var reviews: [Review] = []
 
     @State private var selectedTab = 0
@@ -24,18 +23,18 @@ struct UserView: View {
     }
 
     private var currentUser: User {
-        userViewModel.user ?? provider.user 
+        userViewModel.user ?? provider.user
     }
     
     private var isReadOnly: Bool {
-        !(userViewModel.isAuth(provider.user.email))
+        userViewModel.user != provider.user
     }
 
     var body: some View {
         NavigationStack {
-            if provider.isLoading || gamesViewModel.isLoading {
+            if userViewModel.isLoading {
                 LoadingView()
-            } else if let err = provider.errorMessage ?? gamesViewModel.errorMessage {
+            } else if let err = userViewModel.errorMessage {
                 Text(err)
             } else {
                 ScrollView(.vertical) {
@@ -65,14 +64,12 @@ struct UserView: View {
                         
                         switch selectedTab {
                         case 0:
-                            FavoritesView(favs: $favs)
+                            FavoritesView(favs: $favs, userViewModel: UserViewModel(user: provider.user))
                         case 1:
-                            PlaylistView(playlist: $playlist)
+                            PlaylistView(userViewModel: UserViewModel(user: provider.user))
                         case 2:
                             if !isReadOnly {
                                 MyReviewsView(reviews: $reviews)
-                            } else {
-                                EmptyView()
                             }
                         default:
                             EmptyView()
@@ -127,7 +124,7 @@ struct UserView: View {
                         SettingsView()
                     }
                     .alert(isPresented: $showErrorAlert) {
-                        Alert(title: Text("Error"), message: Text(provider.errorMessage ?? gamesViewModel.errorMessage ?? "An unknown error occurred"), dismissButton: .default(Text("OK")))
+                        Alert(title: Text("Error"), message: Text(userViewModel.errorMessage ?? "An unknown error occurred"), dismissButton: .default(Text("OK")))
                     }
                 }
             }
@@ -218,13 +215,17 @@ struct UserView: View {
     }
 
     private func loadData() {
-        guard !provider.isLoading && !gamesViewModel.isLoading else { return }
+        guard !userViewModel.isLoading else { return }
 
         Task {
             await userViewModel.refreshUser()
-            favs = await gamesViewModel.fetchFavs(user: currentUser)
-            playlist = await gamesViewModel.fetchUsersPlaylist(user: currentUser)
             reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
         }
+        
+        let dict = currentUser.splitByState()
+        
+        favs = dict[GameState.favorite]?.map { game in
+            Item(game: game)
+        } ?? []
     }
 }

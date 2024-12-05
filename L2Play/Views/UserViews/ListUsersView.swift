@@ -20,14 +20,14 @@ private struct ListUsersView<ButtonRow: View>: View {
     var navigationBarTitle: NavBarTitle
     
     @State private var searchText = ""
-    var ids: [UUID]
+    var ids: [String]
     @State private var users: [User] = []
     
     @ViewBuilder var button: (User) -> ButtonRow
     
-    private var currentUserID : UUID? = nil
+    private var currentUserID : String? = nil
     
-    init(navigationBarTitle: NavBarTitle, ids: [UUID],currentUserID: UUID? = nil, @ViewBuilder button: @escaping (User) -> ButtonRow) {
+    init(navigationBarTitle: NavBarTitle, ids: [String], currentUserID: String? = nil, @ViewBuilder button: @escaping (User) -> ButtonRow) {
         self.navigationBarTitle = navigationBarTitle
         self.ids = ids
         self.button = button
@@ -91,8 +91,9 @@ struct BlockedPeopleView: View {
         ListUsersView(navigationBarTitle: .blocked, ids: provider.user.blockedUsers) { user in
             Button(role: .destructive) {
                 Task {
-                    var u = user
-                    await provider.toogleBlockUser(&u)
+                    print(provider.user.blockedUsers)
+                    //                    var u = user
+                    //                    await provider.toogleBlockUser(&u)
                 }
             } label: {
                 Text("Unblock")
@@ -107,7 +108,7 @@ struct FollowView: View {
     @ObservedObject var userViewModel: UserViewModel
     var title: NavBarTitle
     
-    private var coll: [UUID] {
+    private var coll: [String] {
         if let user = userViewModel.user {
             title == .followers ? user.followers : user.following
         } else {

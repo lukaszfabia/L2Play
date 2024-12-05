@@ -18,32 +18,22 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     @Published private(set) var user: User
     @Published var reviews: [Review] = []
     
-    private let manager: FirebaseManager = FirebaseManager()
-    
-    var popularity: Int {
-        ///
-        return 0 
+    var reviewCount: Int {
+        reviews.count
     }
     
+    private let manager: FirebaseManager = FirebaseManager()
+    
+
     init(game: Game, user: User) {
         self.game = game
         self.user = user
     }
     
     func refreshGame() async {
-        let r : Result<_, Error> = await performAsyncOperation {
+        let _ = await performAsyncOperation {
             await self.fetchReviewsForGame()
         }
-        
-        switch r {
-        case .failure(let err):
-            print("Failed to refresh reviews \(err.localizedDescription)")
-            self.errorMessage = "Failed to refresh reviews"
-            break
-        case .success:
-            break
-        }
-        
         
         let result: Result<Game, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .games, id: self.game.id.uuidString)
@@ -61,45 +51,27 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         
     }
     
-    func isOnList() -> Bool {
-        return user.playlist.contains(game.id)
-    }
-    
-    func isFav() -> Bool {
-        return user.favGames.contains(game.id)
-    }
-    
-    private func toggleGame(for keyPath: WritableKeyPath<User, [UUID]>) async {
-        if user[keyPath: keyPath].contains(game.id) {
-            if let index = user[keyPath: keyPath].firstIndex(of: game.id) {
-                user[keyPath: keyPath].remove(at: index)
-            }
-        } else {
-            user[keyPath: keyPath].append(game.id)
-        }
+    func addGame(state: GameState) async {
+        guard state != .notPlayed else {return}
         
-
+        user.toggleGame(game: game, state: state)
+    
         let result: Result<_, Error> =  await performAsyncOperation {
-            try await self.manager.update(collection: .users, id: self.user.email, object: self.user)
+            try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
         }
         
         switch result {
         case .success:
             self.user = user
+            
+            await updatePopularity()
+            
             break
         case .failure(let error):
             print("Failed to update user: \(error.localizedDescription)")
             self.errorMessage = "Failed to update user"
             break
         }
-    }
-    
-    func toogleFavGameState() async {
-        await toggleGame(for: \.favGames)
-    }
-    
-    func toggleGameState()  async {
-        await toggleGame(for: \.playlist)
     }
     
     func fetchReviewsForGame() async {
@@ -119,7 +91,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
             }
             
             // set current user review as a first
-            if let index = self.reviews.firstIndex(where: {$0.author.email == user.email}) {
+            if let index = self.reviews.firstIndex(where: {$0.author.id == user.id}) {
                 let currUserReivew = self.reviews[index]
                 self.reviews.remove(at: index)
                 self.reviews.insert(currUserReivew, at: 0)
@@ -129,8 +101,55 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         }
     }
     
-
-    func updateGameRating() async {
+    func addReview(content: String, rating: Int) async {
+        let userReview = reviews.first {$0.author.id == user.id}
+        
+        if let userReview {
+            userReview.updateReview(newReview: content, newRating: rating)
+            
+            let updateResult: Result<_, Error> = await performAsyncOperation {
+                try await self.manager.update(collection: .reviews, id: userReview.id.uuidString, object: userReview)
+            }
+            
+            switch updateResult {
+            case .success:
+                // swap reviews
+                if let i = reviews.firstIndex(where: { $0.gameID == userReview.gameID }) {
+                    reviews[i] = userReview
+                }
+                break
+            case .failure(let error):
+                print("Failed to update review: \(error.localizedDescription)")
+                self.errorMessage = "Failed to update review"
+                break
+            }
+            
+        } else {
+            let newReview = Review(review: content, rating: rating, gameID: game.id, author: Author(user: user))
+            
+            let createResult: Result<Review, Error> = await performAsyncOperation {
+                try await self.manager.create(collection: .reviews, object: newReview, customID: newReview.id.uuidString)
+            }
+            
+            switch createResult {
+            case .success(let fetchedReview):
+                self.reviews.append(fetchedReview)
+                break
+            case .failure(let error):
+                print("Failed to create review: \(error.localizedDescription)")
+                self.errorMessage = "Failed to create review"
+                break
+            }
+        }
+        
+        await updateGameRating()
+    }
+    
+    private func updatePopularity() async {
+        // some stuff
+    }
+    
+    private func updateGameRating() async {
         var result: Double = 0
         let DEFAULT_POWER = 0.1
         
@@ -153,7 +172,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
             }
         }
         
-        result = result < 0 ? 0 : result / Double(reviews.count)
+        result = result < 0 ? 0 : result / Double(reviewCount)
         
         
         self.game.rating = result

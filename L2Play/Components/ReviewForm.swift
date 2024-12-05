@@ -9,8 +9,7 @@
 import SwiftUI
 
 struct ReviewForm: View {
-    @StateObject var reviewViewModel: ReviewViewModel
-    var updateGameRating: () async -> Void
+    @StateObject var gv: GameViewModel
     @Binding var closeForm: Bool
     @State var review : String = ""
     @State var rating : Int = 0
@@ -75,9 +74,8 @@ struct ReviewForm: View {
                 
                 Button(action: {
                     Task {
-                        await reviewViewModel.addReview(content: review, rating: rating)
-                        await updateGameRating()
-                        if reviewViewModel.errorMessage != nil {
+                        await gv.addReview(content: review, rating: rating)
+                        if gv.errorMessage != nil {
                             HapticManager.shared.generateNotificationFeedback(type: .error)
                         } else {
                             HapticManager.shared.generateNotificationFeedback(type: .success)

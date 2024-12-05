@@ -18,6 +18,10 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     @Published var review: Review
     @Published var comments: [Comment] = []
     
+    var commentsCount: Int {
+        return comments.count
+    }
+    
     
     private var manager = FirebaseManager()
     
@@ -32,7 +36,7 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         self.game = game
         
         // potential reveiew for current user
-        self.review = Review(review: "", rating: 0, gameID: game.id, author: Author(user: user))
+        self.review = Review(user: user, gameID: game.id)
     }
     
     // please fetch game
@@ -40,24 +44,9 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         self.user = user
         self.review = review
         
-        self.game = Game.dummy()
+        self.game = Game() // empty game
     }
-    
-    
-    var commentsCount: Int {
-        return comments.count
-    }
-    
-    private func toggleReaction(removeKeyPath: WritableKeyPath<Review, [UUID]>, addKeyPath: WritableKeyPath<Review, [UUID]>, review: inout Review) -> Review {
-        if let index = review[keyPath: addKeyPath].firstIndex(of: user.id) {
-            review[keyPath: addKeyPath].remove(at: index)
-        } else {
-            review[keyPath: removeKeyPath].removeAll { $0 == user.id }
-            review[keyPath: addKeyPath].append(user.id)
-        }
-        
-        return review
-    }
+
     
     private func updateReactState(r: Review) async {
         let result: Result<_, Error> = await performAsyncOperation {
@@ -74,80 +63,20 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func like() async {
-        review = toggleReaction(removeKeyPath: \.dislikes, addKeyPath: \.likes, review: &review)
+        review.like(by: user.id)
         await updateReactState(r: review)
     }
     
     func dislike() async {
-        review = toggleReaction(removeKeyPath: \.likes, addKeyPath: \.dislikes, review: &review)
+        review.dislike(by: user.id)
         await updateReactState(r: review)
-    }
-    
-    
-    func hasUserReacted(for keyPath: WritableKeyPath<Review, [UUID]>) -> Bool {
-        return review[keyPath: keyPath].contains(user.id)
     }
     
     func deleteReview() {
         self.manager.delete(collection: .reviews, id: review.id.uuidString)
     }
     
-    func addReview(content: String, rating: Int) async {
-        var reviews: [Review] = []
-        // fetch reviews for a game
-        let result: Result<[Review], Error> = await performAsyncOperation {
-            try await self.manager.findAll(collection: .reviews, whereIs: ("gameID", self.game.id.uuidString))
-        }
-        
-        switch result {
-        case .success(let fetchedReviews):
-            reviews = fetchedReviews
-        case .failure(let error):
-            print("Failed to fetch reviews: \(error.localizedDescription)")
-            self.errorMessage = "Failed to fetch reviews"
-            return
-        }
-        
-        let userReview = reviews.first {$0.author.email == user.email}
-        
-        if let userReview {
-            let old = userReview
-            
-            
-            let updatedReview = Review(oldReview: old, newReview: content, newRating: rating)
-            
-            let updateResult: Result<_, Error> = await performAsyncOperation {
-                try await self.manager.update(collection: .reviews, id: old.id.uuidString, object: updatedReview)
-            }
-            
-            switch updateResult {
-            case .success:
-                self.review = updatedReview
-            case .failure(let error):
-                print("Failed to update review: \(error.localizedDescription)")
-                self.errorMessage = "Failed to update review"
-            }
-            
-        } else {
-            
-            let newReview = Review(review: content, rating: rating, gameID: game.id, author: Author(user: user))
-            
-            
-            let createResult: Result<Review, Error> = await performAsyncOperation {
-                try await self.manager.create(collection: .reviews, object: newReview, customID: newReview.id.uuidString)
-            }
-            
-            switch createResult {
-            case .success(let fetchedReview):
-                self.review = fetchedReview
-            case .failure(let error):
-                print("Failed to create review: \(error.localizedDescription)")
-                self.errorMessage = "Failed to create review"
-            }
-        }
-    }
-    
-    
+
     func fetchComments() async {
         let result: Result<[Comment], Error> = await performAsyncOperation {
             try await self.manager.findAll(collection: .comments, whereIs: ("reviewID", self.review.id.uuidString))
@@ -155,10 +84,10 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         
         switch result {
         case .success(let fetchedComments):
-            comments = fetchedComments
-        case .failure(let error):
-            print("Failed to fetch comments: \(error.localizedDescription)")
-            errorMessage = "Failed to fetch comments"
+            self.comments = fetchedComments
+            break
+        case .failure:
+            break
         }
     }
     

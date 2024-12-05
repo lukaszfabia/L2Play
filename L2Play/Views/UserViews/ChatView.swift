@@ -1,95 +1,166 @@
 //
 //  ChatView.swift
-//  ios
+//  L2Play
 //
 //  Created by Lukasz Fabia on 09/10/2024.
 //
 
 import SwiftUI
 
-private func getReceiverID(currUserID: String?, chat: Chat) -> String? {
-    guard let currUserID else {return nil}
+
+struct SearchForPplView: View {
+    @EnvironmentObject private var provider: AuthViewModel
+    @State private var filteredProfiles: [User] = []
+    @State private var profiles: [User] = []
+    @State private var searchedText: String = ""
+    @State private var selectedChat: Chat? = nil
+    @ObservedObject var uv: UserViewModel
     
-    for (userID, _) in chat.participants where userID != currUserID {
-        return userID
+    var body: some View {
+        VStack {
+            if profiles.isEmpty {
+                Text("Loading users...")
+            } else {
+                List(filteredProfiles) { profile in
+                    Button {
+                        createOrSelectChat(with: profile)
+                    } label: {
+                        userRow(profile: profile)
+                    }
+                }
+                .searchable(text: $searchedText, prompt: "Search for people...")
+                .onChange(of: searchedText) {
+                    filterProfiles()
+                }
+
+                if let chat = selectedChat {
+                    NavigationLink(destination: ChatView(viewModel: ChatViewModel(chatID: chat.id))) {
+                        EmptyView()
+                    }
+                }
+            }
+        }
+        .navigationTitle("Start Chatting")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            Task {
+                profiles = await uv.getAllWithIds(provider.user.following)
+                filterProfiles()
+            }
+        }
     }
-    return nil
+    
+    private func filterProfiles() {
+        if searchedText.isEmpty {
+            filteredProfiles = profiles
+        } else {
+            filteredProfiles = profiles.filter({
+                $0.fullName().lowercased().contains(searchedText.lowercased())
+            })
+        }
+    }
+    
+    private func userRow(profile: User) -> some View {
+        HStack(spacing: 20) {
+            UserImage(pic: profile.profilePicture, w: 40, h: 40)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(profile.fullName())
+                    .font(.headline)
+                
+                if profile.isFollowing(provider.user.id) {
+                    Text("Follows you")
+                        .padding(8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .foregroundColor(.primary)
+                }
+            }
+            Spacer()
+        }
+    }
+    
+    private func createOrSelectChat(with profile: User) {
+        let participants = [
+            provider.user.id: Author(user: provider.user),
+            profile.id: Author(user: profile)
+        ]
+        
+        ChatViewModel().findOrCreateChat(participants: participants) { chat in
+            if let chat = chat {
+                selectedChat = chat
+            }
+        }
+    }
 }
 
-private func formatTimestamp(_ timestamp: Double) -> String {
-    let date = Date(timeIntervalSince1970: timestamp)
-    let formatter = DateFormatter()
-    formatter.dateStyle = .none
-    formatter.timeStyle = .short
-    return formatter.string(from: date)
-}
 
 struct ChatListView: View {
     @EnvironmentObject private var provider: AuthViewModel
-    @StateObject private var userViewModel: UserViewModel = UserViewModel()
-    
-    @State private var chats: [Chat] = []
+    @StateObject private var userViewModel = UserViewModel()
+    @State private var showSearchPpl = false
     
     var body: some View {
         NavigationStack {
-            if !chats.isEmpty {
-                LazyVStack {
-                    ForEach(chats, id: \.id) { chat in
-                        NavigationLink(destination: ChatView(viewModel: ChatViewModel(chatID: chat.id))) {
-                            ChatRow(chat: chat, userViewModel: userViewModel, currUserID: provider.currentUserUUID)
-                                .foregroundStyle(.primary)
-                        }
-                    }
-                }
+            if provider.user.chats.isEmpty {
+                emptyChatView
             } else {
-                VStack(spacing: 10) {
-                    Text("Start Chatting with people!")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding()
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Discover new conversations and connect with players!")
-                        .font(.subheadline)
-                        .padding(.horizontal)
-                        .multilineTextAlignment(.center)
-                    
-                    NavigationLink(destination: ExploreGamesView(), label: {
-                        Text("Explore Games and Join Now")
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                            .padding()
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(10)
-                    })
-                }.padding()
+                chatList
             }
         }
         .navigationTitle("Chat")
-        .onAppear() {
-            provider.listUserChats()
-            chats = provider.chats
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showSearchPpl.toggle() }) {
+                    Image(systemName: "square.and.pencil")
+                }
+            }
         }
-        .refreshable {
-            provider.listUserChats()
-            chats = provider.chats
+        .sheet(isPresented: $showSearchPpl) {
+            SearchForPplView(uv: userViewModel)
+        }
+    }
+    
+    private var emptyChatView: some View {
+        VStack(spacing: 10) {
+            Text("Start Chatting with people!")
+                .multilineTextAlignment(.center)
+                .font(.title)
+                .fontWeight(.bold)
+                .padding()
+            
+            NavigationLink(destination: SearchForPplView(uv: userViewModel)) {
+                Text("Search for people to talk from your following profiles!")
+                    .font(.headline)
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(10)
+            }
+        }
+        .padding()
+    }
+    
+    private var chatList: some View {
+        LazyVStack {
+            List(provider.user.chats, id: \.self) { id in
+                Text(id)
+            }
         }
     }
 }
+
 
 struct ChatRow: View {
     @State var chat: Chat
     @ObservedObject var userViewModel: UserViewModel
-    @State private var user: User?
-    @State var currUserID: String?
+    @State var currID: String
     
     var body: some View {
         HStack(spacing: 15) {
-            UserImage(pic: user?.profilePicture)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                if let user, let firstName = user.firstName, let lastName = user.lastName {
-                    Text("\(firstName) \(lastName)")
+            if let user = userViewModel.user {
+                UserImage(pic: user.profilePicture)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(user.fullName())
                         .font(.headline)
                         .foregroundColor(.primary)
                 }
@@ -99,14 +170,14 @@ struct ChatRow: View {
                     .lineLimit(1)
                     .foregroundColor(.secondary)
                 
-                Text(formatTimestamp(chat.lastMessageTimestamp))
+                Text(chat.lastMessageTimestamp.formatTimestamp())
                     .font(.footnote)
                     .foregroundColor(.gray)
             }
             
             Spacer()
             
-            Text(formatTimestamp(chat.lastMessageTimestamp))
+            Text(chat.lastMessageTimestamp.formatTimestamp())
                 .font(.footnote)
                 .foregroundColor(.gray)
                 .padding(.trailing, 10)
@@ -118,37 +189,52 @@ struct ChatRow: View {
         .shadow(radius: 5)
         .onAppear {
             Task {
-                user = await userViewModel.getUserByID(
-                    getReceiverID(currUserID: currUserID, chat: chat)
-                )
+                await userViewModel.fetchUser(with:
+                                                userViewModel.getReceiverID(for: chat, currentUserID: currID))
             }
         }
     }
 }
 
 struct ChatView: View {
+    @EnvironmentObject private var provider: AuthViewModel
     @ObservedObject var viewModel: ChatViewModel
     @State private var messageText: String = ""
-    @EnvironmentObject private var provider: AuthViewModel
     
+    private func getAuthor(for message: Message, in chat: Chat) -> Author? {
+        guard let author = chat.participants[message.senderID.uuidString] else {
+            return nil
+        }
+        return author
+    }
+
     var body: some View {
         VStack {
             if viewModel.isLoading {
                 LoadingView()
             } else {
-                ScrollViewReader { scrollView in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 8) {
-                            ForEach(viewModel.chat?.messages ?? [], id: \.id) { message in
-                                MessageBubble(message: message, isCurrentUser: message.senderId == provider.user.id.uuidString)
-                            }
-                        }
-                        .padding()
-                    }
-                    .onChange(of: viewModel.chat?.messages.count) {
-                        scrollToBottom(scrollView)
-                    }
-                }
+                Text("JHFBSHKDFBSDKJFBSDKJFSD")
+//                ScrollViewReader { scrollView in
+//                    ScrollView {
+//                        LazyVStack(alignment: .leading, spacing: 8) {
+//                            if let chat = viewModel.chat {
+//                                ForEach(chat.messages, id: \.id) { message in
+//                                    if let author = getAuthor(for: message, in: chat) {
+//                                        MessageBubble(
+//                                            message: message,
+//                                            isCurrentUser: message.isMe(provider.user.id),
+//                                            author: author
+//                                        )
+//                                    }
+//                                }
+//                            }
+//                        }
+//                        .padding()
+//                    }
+//                    .onChange(of: viewModel.chat?.messages.count) { _ in
+//                        scrollToBottom(scrollView)
+//                    }
+//                }
             }
             
             chatInputBar
@@ -158,10 +244,15 @@ struct ChatView: View {
         }
         .navigationTitle("Chat")
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: .constant(!viewModel.errorMessage.isEmpty)) {
-            Alert(title: Text("Error"), message: Text(viewModel.errorMessage), dismissButton: .default(Text("OK")))
+        .alert(isPresented: .constant(viewModel.errorMessage != nil)) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage!),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
+
     
     private var chatInputBar: some View {
         HStack {
@@ -182,7 +273,7 @@ struct ChatView: View {
     }
     
     private func sendMessage() {
-        viewModel.sendMessage(text: messageText, senderId: provider.user.id.uuidString)
+        viewModel.sendMessage(text: messageText, senderID: provider.user.id)
         messageText = ""
     }
     
@@ -194,40 +285,3 @@ struct ChatView: View {
         }
     }
 }
-
-struct MessageBubble: View {
-    let message: Message
-    let isCurrentUser: Bool
-    
-    var body: some View {
-        HStack {
-            if isCurrentUser { Spacer() }
-            
-            VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
-                    .padding()
-                    .background(isCurrentUser ? Color.accentColor : Color.gray.opacity(0.2))
-                    .foregroundColor(isCurrentUser ? .white : .black)
-                    .cornerRadius(12)
-                    .frame(maxWidth: 250, alignment: isCurrentUser ? .trailing : .leading)
-                
-                Text(formatTimestamp(message.timestamp))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            
-            if !isCurrentUser { Spacer() }
-        }
-        .padding(isCurrentUser ? .leading : .trailing, 60)
-        .padding(.vertical, 4)
-    }
-    
-    private func formatTimestamp(_ timestamp: Double) -> String {
-        let date = Date(timeIntervalSince1970: timestamp)
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-}
-

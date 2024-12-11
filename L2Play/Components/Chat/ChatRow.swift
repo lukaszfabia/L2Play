@@ -15,7 +15,12 @@ struct ChatRow: View {
     
     var body: some View {
         HStack(spacing: 10) {
-            if let user = userViewModel.user {
+            if userViewModel.user == nil && chat == nil {
+                LoadingView().task {
+                    await loadChatData()
+                }
+            }
+            else if let user = userViewModel.user {
                 UserImage(pic: user.profilePicture)
                 
                 VStack(alignment: .leading) {
@@ -35,40 +40,32 @@ struct ChatRow: View {
                         .lineLimit(1)
                         .foregroundColor(.secondary)
                 }
-            } else {
-                LoadingView()
-            }
-            
-            Spacer()
-            
-            Text(chatViewModel.chat?.messages.last?.timestamp.formatTimestamp() ?? "")
+                
+                Spacer()
+                
+                Text(chatViewModel.chat?.messages.last?.timestamp.formatTimestamp() ?? "")
                     .font(.footnote)
                     .foregroundColor(.gray)
                     .padding(.trailing, 10)
+            }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 15)
         .background(Color(.systemGray6))
         .cornerRadius(10)
         .shadow(radius: 5)
-        .onAppear {
-            loadChatData()
-        }
     }
     
-    private func loadChatData() {
-        chatViewModel.findChat { fetchedChat in
-            if let c = fetchedChat {
-                chat = c
-                
-                Task {
-                    if let receiverID = userViewModel.getReceiverID(for: chat, currentUserID: authUserID) {
-                        await userViewModel.fetchUser(with: receiverID)
-                    } else {
-                        print("Receiver ID not found")
-                    }
-                }
+    private func loadChatData() async {
+        if let c = await chatViewModel.findChat() {
+            chat = c
+            if let receiverID = userViewModel.getReceiverID(for: chat, currentUserID: authUserID) {
+                await userViewModel.fetchUser(with: receiverID)
+            } else {
+                print("Receiver ID not found")
             }
         }
     }
+
+
 }

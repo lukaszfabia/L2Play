@@ -117,6 +117,13 @@ class Game: Codable, Identifiable {
     let platform: [String]
     let multiplayerSupport: Bool
     
+    
+    private var _releaseYear: Int?
+    private var _price: Double?
+    private var _community: [String]
+    private var _popularity: Int
+    private var _rating: Double
+    
     // MARK: Initializers
     init() {
         self.id = .init()
@@ -151,12 +158,6 @@ class Game: Codable, Identifiable {
         self._releaseYear = releaseYear
     }
     
-    
-    private var _releaseYear: Int?
-    private var _price: Double?
-    private var _community: [String]
-    private var _popularity: Int
-    private var _rating: Double
 
     var rating: Double {
         get {

@@ -21,6 +21,7 @@ class Post: Codable, Identifiable, Hashable {
     let content: String
     var image: URL? // too poor to set list - i dont have a too much space for that
     var author: Author
+    var isRepost: Bool
     var reposts: [UUID] // post id !!!
     
     private var up: [String]
@@ -43,7 +44,7 @@ class Post: Codable, Identifiable, Hashable {
          hasher.combine(id)
      }
     
-    init(title: String? = nil, content: String, author: Author, image: URL? = nil, reposts: [UUID] = []) {
+    init(title: String? = nil, content: String, author: Author, image: URL? = nil, reposts: [UUID] = [], isRepost: Bool) {
         self.id = .init()
         self.createdAt = Date()
         self.content = content
@@ -52,6 +53,7 @@ class Post: Codable, Identifiable, Hashable {
         self.down = []
         self.image = image
         self.reposts = []
+        self.isRepost = isRepost
         
         if let title, !title.isEmpty {
             self.title = title

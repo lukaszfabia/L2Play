@@ -30,6 +30,14 @@
             
         }
         
+//        func deleteImage(url: URL) async throws {
+//            guard let cloudinary = _cloudinary else {
+//                throw NSError(domain: "Cloudinary", code: 0, userInfo: [NSLocalizedDescriptionKey: "Cloudinary not initialized"])
+//            }
+//            
+//            
+//        }
+        
         // TODO: append to params old url to remove if it was existed
         func uploadImage(image: UIImage) async throws -> URL {
             guard let cloudinary = _cloudinary else {

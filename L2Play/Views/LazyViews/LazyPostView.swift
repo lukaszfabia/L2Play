@@ -10,21 +10,22 @@ import SwiftUI
 
 struct LazyPostView: View {
     @Binding var post: Post
-    @Binding var posts: [Post]
     @ObservedObject var postViewModel: PostViewModel
     @ObservedObject var provider: AuthViewModel
     
     @State private var reposts: [Post] = []
-
+    
     var body: some View {
         Group {
-            if !postViewModel.isLoading {
-                PostDetailsView(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider, reposts: $reposts)
+            if !reposts.isEmpty || post.reposts.isEmpty {
+                PostDetailsView(post: $post, postViewModel: postViewModel, provider: provider, reposts: $reposts)
             } else {
-                ProgressView("Loading post")
-                    .task {
-                        reposts = await postViewModel.fetchReposts(post)
-                    }
+                LoadingView()
+            }
+        }.task {
+            // dont fetch 
+            if !post.reposts.isEmpty {
+                reposts = await postViewModel.fetchReposts(post)
             }
         }
     }

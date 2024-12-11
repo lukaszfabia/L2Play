@@ -69,7 +69,12 @@ class PostViewModel: ObservableObject, AsyncOperationHandler {
         }
         
         if case .success(let success) = r {
-            self.posts = success.sorted(by: {$0.createdAt > $1.createdAt})
+            self.posts = success
+                .filter{!$0.isRepost}
+                .sorted(by: {$0.createdAt > $1.createdAt})
+            
+        } else if case .failure(let failure) = r {
+            print(failure.localizedDescription)
         }
     }
     

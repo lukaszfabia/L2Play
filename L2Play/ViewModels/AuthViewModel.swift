@@ -53,6 +53,9 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func refreshUser(_ user: User) async {
+        self.isLoading = true
+        defer { self.isLoading = false }
+        
         let result: Result<User, Error>  = await performAsyncOperation {
             try await self.manager.read(collection: .users, id: user.id)
         }
@@ -283,7 +286,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         
         // we have blocked so update other user state
         if self.user.block(who: &copy) {
-             let _: Result<_, Error> = await performAsyncOperation {
+            let _: Result<_, Error> = await performAsyncOperation {
                 try await self.manager.update(collection: .users, id: copy.id, object: copy)
             }
         }
@@ -392,6 +395,20 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             comments.forEach {$0.author = author}
             posts.forEach {$0.author = author}
         }
+    }
+    
+    func fetchRecommendations() async -> [Item] {
+        return []
+        //        let predictedIds: [String] = self._model.predict() ?? []
+        //
+        //
+        //        guard !predictedIds.isEmpty else {return []}
+        //
+        //        let r: Result<[Game], Error> = await performAsyncOperation {
+        //            try await self.manager.findAll(collection: .games, ids: predictedIds)
+        //        }
+        //
+        //        return (try? r.get().map { Item($0) }) ?? []
     }
     
 }

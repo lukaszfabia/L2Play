@@ -146,7 +146,7 @@ class FirebaseManager {
     }
     
     func delete(collection: Collections, ids: [UUID], where field: String?=nil) async throws {
-        let query: Query = db.collection(collection.rawValue).whereField(field ?? "id", in: ids)
+        let query: Query = db.collection(collection.rawValue).whereField(field ?? "id", in: ids.map({$0.uuidString}))
         
         do {
             let snapshot = try await query.getDocuments()

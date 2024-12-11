@@ -14,19 +14,15 @@ struct ChatListView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            Group {
                 if provider.user.chats.isEmpty {
                     emptyChatView
                 } else {
                     chatList
                 }
             }
-            .onAppear {
-                Task {
-                    await provider.refreshUser(provider.user)
-                }
-            }
-            .navigationTitle("Chat")
+        }
+        .navigationTitle("Chat")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showSearchPpl.toggle() }) {
@@ -40,7 +36,6 @@ struct ChatListView: View {
             .sheet(isPresented: $showSearchPpl) {
                 SearchForPplView(uv: UserViewModel(user: provider.user))
             }
-        }
     }
     
     private var emptyChatView: some View {
@@ -65,7 +60,7 @@ struct ChatListView: View {
     private var chatList: some View {
         ScrollView {
             ForEach(provider.user.chats, id: \.self) { id in
-                NavigationLink(destination: ChatView(viewModel: ChatViewModel(chatID: id), receiverViewModel: userViewModels[id] ?? createUserViewModel(for: id))) {
+                NavigationLink(destination: ChatView(chatViewModel: ChatViewModel(chatID: id), receiverViewModel: userViewModels[id] ?? createUserViewModel(for: id))) {
                     ChatRow(
                         authUserID: provider.user.id,
                         userViewModel: userViewModels[id] ?? createUserViewModel(for: id),

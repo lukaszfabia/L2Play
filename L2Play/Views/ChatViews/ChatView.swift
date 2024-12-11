@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject private var provider: AuthViewModel
-    @ObservedObject var viewModel: ChatViewModel
+    @ObservedObject var chatViewModel: ChatViewModel
     @ObservedObject var receiverViewModel: UserViewModel
     @State private var messageText: String = ""
     
@@ -19,13 +19,15 @@ struct ChatView: View {
     
     var body: some View {
         VStack {
-            if viewModel.isLoading {
-                LoadingView()
+            if chatViewModel.chat == nil && !chatViewModel.isLoading {
+                LoadingView().task {
+                    chatViewModel.observeChatMessages()
+                }
             } else {
                 ScrollViewReader { scrollView in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 8) {
-                            if let chat = viewModel.chat {
+                            if let chat = chatViewModel.chat {
                                 ForEach(chat.messages, id: \.uid) { message in
                                     if let author = getAuthor(for: message, in: chat) {
                                         MessageBubble(
@@ -38,11 +40,9 @@ struct ChatView: View {
                             }
                         }
                         .padding()
-                    }.onAppear(){
-                        viewModel.observeChatMessages()
                     }
-                    .onChange(of: viewModel.chat?.messages.count) {
-                        if let lastMessageId = viewModel.chat?.messages.last?.id {
+                    .onChange(of: chatViewModel.chat?.messages.count) {
+                        if let lastMessageId = chatViewModel.chat?.messages.last?.id {
                             DispatchQueue.main.async {
                                 scrollView.scrollTo(lastMessageId, anchor: .bottom)
                             }
@@ -58,10 +58,10 @@ struct ChatView: View {
         }
         .navigationTitle(receiverViewModel.user?.fullName() ?? "Chat")
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert(isPresented: .constant(chatViewModel.errorMessage != nil)) {
             Alert(
                 title: Text("Error"),
-                message: Text(viewModel.errorMessage!),
+                message: Text(chatViewModel.errorMessage!),
                 dismissButton: .default(Text("OK"))
             )
         }
@@ -86,7 +86,7 @@ struct ChatView: View {
     }
     
     private func sendMessage() {
-        viewModel.sendMessage(text: messageText, senderID: provider.user.id)
+        chatViewModel.sendMessage(text: messageText, senderID: provider.user.id)
         messageText = ""
     }
 }

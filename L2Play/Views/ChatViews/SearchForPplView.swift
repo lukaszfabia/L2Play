@@ -18,8 +18,17 @@ struct SearchForPplView: View {
     
     var body: some View {
         VStack {
-            if profiles.isEmpty {
-                LoadingView()
+            if profiles.isEmpty && !uv.isLoading {
+                LoadingView().task {
+                    profiles = await uv.getAllWithIds(provider.user.following)
+                    filterProfiles()
+                }
+            } else if profiles.isEmpty {
+                Text("No people to chat")
+                    .font(.headline)
+                    .padding()
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
             } else {
                 List(filteredProfiles) { profile in
                     Button {
@@ -30,14 +39,12 @@ struct SearchForPplView: View {
                 }
                 .searchable(text: $searchedText, prompt: "Search for people...")
                 .onChange(of: searchedText) {
-                    //                    DispatchQueue.main.async {
                     filterProfiles()
-                    //                    }
                 }
                 
                 
                 if let chat = selectedChat {
-                    NavigationLink(destination: ChatView(viewModel: ChatViewModel(chatID: chat.id), receiverViewModel: uv)) {
+                    NavigationLink(destination: ChatView(chatViewModel: ChatViewModel(chatID: chat.id), receiverViewModel: uv)) {
                         EmptyView()
                     }
                 }
@@ -45,12 +52,6 @@ struct SearchForPplView: View {
         }
         .navigationTitle("Start Chatting")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            Task {
-                profiles = await uv.getAllWithIds(provider.user.following)
-                filterProfiles()
-            }
-        }
     }
     
     private func filterProfiles() {

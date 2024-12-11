@@ -13,38 +13,44 @@ struct HomeView: View {
     @State private var selectedGame: GameWithState?
     @State private var posts: [Post] = []
     @StateObject var postViewModel: PostViewModel
-
+    @State private var recommendations: [Item] = []
+    
+    @State private var triedToFetch: Bool = false
     
     var body: some View {
-        if postViewModel.isLoading {
-            LoadingView().task {
-                await loadPosts()
-            }
-        } else {
-            NavigationStack {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        welcome
-                        
-                        postSection
-                    }.padding(.horizontal, 10)
+        Group{
+            if posts.isEmpty && !triedToFetch {
+                LoadingView().task {
+                    await loadPosts()
+                    triedToFetch.toggle()
+                    recommendations = await provider.fetchRecommendations()
                 }
-                .padding(.horizontal, 5)
-                .navigationTitle("Welcome, \(provider.user.firstName ?? "")!")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { postcreator.toggle() }) {
-                            Image(systemName: "square.and.pencil")
-                                .imageScale(.large)
+            } else {
+                NavigationStack {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            welcome
+                            
+                            postSection
+                        }.padding(.horizontal, 10)
+                    }
+                    .padding(.horizontal, 5)
+                    .navigationTitle("Welcome, \(provider.user.firstName ?? "")!")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: { postcreator.toggle() }) {
+                                Image(systemName: "square.and.pencil")
+                                    .imageScale(.large)
+                            }
                         }
                     }
+                    .sheet(isPresented: $postcreator) {
+                        PostForm(postViewModel: postViewModel, posts: $posts, postcreator: $postcreator)
+                    }
                 }
-                .sheet(isPresented: $postcreator) {
-                    PostForm(postViewModel: postViewModel, posts: $posts, postcreator: $postcreator)
+                .refreshable {
+                    await loadPosts()
                 }
-            }
-            .refreshable {
-                await loadPosts()
             }
         }
     }
@@ -54,27 +60,27 @@ struct HomeView: View {
         await postViewModel.fetchPosts()
         self.posts = postViewModel.posts
     }
+
     
     private var welcome: some View {
         VStack(alignment: .leading) {
             
-            Text("Here are you daily recommendations!")
+            Text("Here your daily recommendations!")
                 .font(.headline.bold())
             
-            Text("Check out what's happening in your world of games!")
-                .font(.subheadline)
-                .foregroundColor(.gray)
             
-            
-            //            CustomPageSlider
+            CustomPageSlider(data: $recommendations) { $item in
+                NavigationLink(destination: LazyGameView(gameID: item.game.gameID, userViewModel: UserViewModel(user: provider.user))) {
+                    GameRecommendationView(game: item.game)
+                }
+            } titleContent: { _ in }
+                .safeAreaPadding([.horizontal, .vertical], 10)
         }
         .padding(.bottom, 15)
     }
     
     private var postSection: some View {
         VStack(alignment: .leading) {
-            CustomDivider()
-            
             ForEach($posts, id: \.id) { $post in
                 VStack(alignment: .leading, spacing: 10) {
                     profile(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider)
@@ -88,7 +94,7 @@ struct HomeView: View {
                 CustomDivider()
             }
         }
-
+        
     }
     
 }
@@ -192,7 +198,7 @@ struct PostForm: View {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(content.isEmpty || isSubmitting ? Color.gray : Color.accentColor)
                         .frame(height: 50)
-
+                    
                     if isSubmitting {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle())
@@ -206,7 +212,7 @@ struct PostForm: View {
             }
             .disabled(content.isEmpty || isSubmitting)
             .padding(.bottom, 20)
-
+            
         }
         .padding()
         .navigationTitle("Post")
@@ -221,7 +227,8 @@ struct PostForm: View {
             let newPost = Post(
                 title: title,
                 content: content,
-                author: Author(user: provider.user)
+                author: Author(user: provider.user),
+                isRepost: false
             )
             
             if let createdPost = await postViewModel.post(newPost, image: selectedImage) {
@@ -244,28 +251,113 @@ struct PostForm: View {
 
 struct PostDetailsView: View {
     @Binding var post: Post
-    @Binding var posts: [Post]
+
     @ObservedObject var postViewModel: PostViewModel
     @ObservedObject var provider: AuthViewModel
     
     @Binding var reposts: [Post]
     
+    @State private var isSubmitting: Bool = false
+    @State private var showImagePicker: Bool = false
+    @State private var content: String = ""
+    @State private var image: UIImage? = nil
+    
+    
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            profile(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider)
-            
-            postInfo(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider)
-            
-            reactionBar(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider)
-            
-            
-            // section with reposts
-            ForEach($reposts) { $repost in
-//                postInfo(post: $repost, posts: [], postViewModel: <#T##PostViewModel#>, provider: <#T##AuthViewModel#>)
+        if postViewModel.isLoading {
+            LoadingView()
+                .task {
+                    let fetchedReposts = await postViewModel.fetchReposts(post)
+                    reposts = fetchedReposts
+                }
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    profile(post: $post, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                    
+                    postInfo(post: $post, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                    
+                    reactionBar(post: $post, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                    
+                    semipostcreator
+                        .padding(.bottom, 5)
+                    
+                    // section with reposts
+                    ForEach($reposts, id: \.id) { $repost in
+                        VStack(alignment: .leading, spacing: 5) {
+                            profile(post: $repost, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                            
+                            postInfo(post: $repost, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                            
+                            reactionBar(post: $repost, posts: $reposts, postViewModel: postViewModel, provider: provider)
+                        }
+                        .padding(.bottom, 10)
+                    }
+                }
+                .padding()
+            }
+            .refreshable {
+                reposts = await postViewModel.fetchReposts(post)
             }
         }
-        .padding(.bottom, 15)
+    }
+
+    
+    private var semipostcreator: some View {
+        VStack {
+            HStack {
+                if let avatar = provider.user.profilePicture {
+                    UserImage(pic: avatar, w: 45, h: 45)
+                }
+                
+                TextField("Repost...", text: $content)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.vertical, 8)
+                    .disabled(isSubmitting)
+                
+                Button(action: {
+                    showImagePicker.toggle()
+                }) {
+                    ZStack{
+                        if image != nil {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 18))
+                                .foregroundColor(.primary)
+                        } else {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.green)
+                        }
+                    }
+                }.sheet(isPresented: $showImagePicker) {
+                    ImagePicker(selectedImage: $image)
+                }
+                
+                Button(action: sendRepost) {
+                    Image(systemName: "paperplane.fill")
+                        .padding(10)
+                        .background(Circle().fill(Color.accentColor))
+                        .foregroundColor(.white)
+                }
+                .disabled(content.isEmpty || isSubmitting)
+            }
+        }
+    }
+    
+    private func sendRepost(){
+        Task{
+            isSubmitting = true
+            defer {isSubmitting = false}
+            
+            if let newRepost = await postViewModel.repost(Post(content: content, author: Author(user: provider.user), isRepost: true), image: image, post: post){
+                reposts.insert(newRepost, at: 0)
+                content = ""
+                HapticManager.shared.generateHapticFeedback(style: .light)
+            } else {
+                HapticManager.shared.generateErrorFeedback()
+            }
+        }
     }
 }
 
@@ -361,7 +453,7 @@ private struct reactionBar: View {
     
     var body: some View {
         HStack {
-            NavigationLink(destination: LazyPostView(post: $post, posts: $posts, postViewModel: postViewModel, provider: provider)) {
+            NavigationLink(destination: LazyPostView(post: $post, postViewModel: postViewModel, provider: provider)) {
                 HStack {
                     Text("\(post.reposts.count)")
                         .foregroundStyle(Color.accentColor)
@@ -369,10 +461,10 @@ private struct reactionBar: View {
                     Image(systemName: "message")
                         .foregroundColor(.accentColor)
                 }
-            
+                
             }
             .onTapGesture {
-                HapticManager.shared.generateSuccessFeedback()
+                HapticManager.shared.generateHapticFeedback(style: .light)
             }
             .buttonStyle(PlainButtonStyle())
             

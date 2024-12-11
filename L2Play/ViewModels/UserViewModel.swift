@@ -60,6 +60,11 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     
     // Get users with provided ids
     func getAllWithIds(_ ids: [String]) async -> [User] {
+        self.isLoading = true
+        defer {
+            self.isLoading = false 
+        }
+        
         if ids.isEmpty {
             return []
         }

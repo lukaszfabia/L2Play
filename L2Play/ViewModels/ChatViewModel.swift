@@ -27,10 +27,10 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
     
     func findOrCreateChat(participants: [String: Author], completion: @escaping (Chat?) -> Void) {
         self.isLoading = true
+        defer {self.isLoading = false}
         let chatsRef = ref.child("chats")
         
         chatsRef.observeSingleEvent(of: .value) { snapshot in
-            self.isLoading = false
             
             if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
                 guard let snap = snap as? DataSnapshot,
@@ -205,30 +205,37 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
         }
     }
     
-    func findChat(completion: @escaping (Chat?) -> Void)  {
+    
+    /// Finds chat, retruns and set it 
+    /// - Returns: chat or nil
+    func findChat() async -> Chat? {
         self.isLoading = true
-        let chatsRef = ref.child("chats")
-        
-        chatsRef.observeSingleEvent(of: .value) { snapshot in
-            self.isLoading = false
+        defer { self.isLoading = false }
+        return await withCheckedContinuation { continuation in
+            let chatsRef = ref.child("chats")
             
-            if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
-                guard let snap = snap as? DataSnapshot,
-                    let _ = snap.value as? [String: Any] else {
-                    return false
+            chatsRef.observeSingleEvent(of: .value) { snapshot in
+                if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
+                    guard let snap = snap as? DataSnapshot,
+                          let _ = snap.value as? [String: Any] else {
+                        return false
+                    }
+                    return snap.key == self.chatID!
+                }) as? DataSnapshot {
+                    let chat = self.recreateChat(from: existingChatSnapshot)
+                    self.chat = chat
+                    continuation.resume(returning: chat)
+                } else {
+                    continuation.resume(returning: nil)
                 }
-                return snap.key == self.chatID!
-            }) as? DataSnapshot {
-                let chat = self.recreateChat(from: existingChatSnapshot)
-                self.chat = chat
-                completion(chat)
-            } else {
-                completion(nil)
             }
         }
     }
 
     func observeChatMessages() {
+        self.isLoading = true
+        defer {self.isLoading = false}
+        
         let messagesRef = ref.child("chats").child(chatID!).child("messages")
         
 

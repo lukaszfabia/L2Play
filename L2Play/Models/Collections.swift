@@ -5,11 +5,12 @@
 //  Created by Lukasz Fabia on 26/11/2024.
 //
 
-enum Collections: String {
-    case reviews = "reviews"
-    case users = "users"
-    case games = "games"
-    case authors = "authors"
-    case comments = "comments"
-    case reported_reviews = "reported_reviews"
+enum Collections: String, Codable, CaseIterable {
+    case reviews
+    case users
+    case games
+    case authors
+    case comments
+    case reported_reviews
+    case posts
 }

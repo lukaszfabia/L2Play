@@ -19,11 +19,9 @@ struct FavoritesView: View {
                 .fontWeight(.light)
             
             HStack (spacing: 0) {
-                Text("First of all ")
+                Text("First of all Games")
                     .font(.headline)
-                    .fontWeight(.thin)
-                    .foregroundStyle(.secondary)
-                GradientText(text: Text("Games"), customFontSize: .headline)
+                    .foregroundStyle(.gray)
             }.padding(.bottom, 5)
             
             if favs.isEmpty {
@@ -35,39 +33,12 @@ struct FavoritesView: View {
                         FavoriteGamesRow(game: item.game)
                     }
                 } titleContent: { _ in }
+                    .safeAreaPadding([.horizontal, .vertical], 10)
             }
-            
-            HStack (spacing: 0) {
-                Text("And ")
-                    .font(.headline)
-                    .fontWeight(.thin)
-                    .foregroundStyle(.secondary)
-                GradientText(text: Text("Genres"), customFontSize: .headline)
-            }.padding(.bottom, 5)
-            
+    
             VStack {
                 // jakeis staty
             }
         }.padding()
     }
 }
-
-struct LazyGameView: View {
-    let gameID: UUID
-    @ObservedObject var userViewModel: UserViewModel
-    @State private var game: Game?
-
-    var body: some View {
-        Group {
-            if let game {
-                GameView(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
-            } else {
-                ProgressView("Loading game...")
-                    .task {
-                        game = await userViewModel.fetchGame(with: gameID)
-                    }
-            }
-        }
-    }
-}
-

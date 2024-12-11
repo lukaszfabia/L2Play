@@ -20,6 +20,7 @@ class User: Codable, Identifiable, Hashable {
     var blockedUsers: [String]
     let createdAt: Date
     var chats: [String]
+    var isMod: Bool = false
     
     // MARK: - Hashable & Equatable
     static func ==(lhs: User, rhs: User) -> Bool {
@@ -81,11 +82,9 @@ class User: Codable, Identifiable, Hashable {
         guard self != otherUser else { return }
         
         if isFollowing(otherUser.id) {
-            print("odfolowujemy")
             following.removeAll(where: {$0 == otherUser.id})
             otherUser.followers.removeAll(where: {$0 == id})
         } else {
-            print("Stared following kogos tam")
             following.append(otherUser.id)
             otherUser.followers.append(id)
         }

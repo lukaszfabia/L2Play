@@ -36,7 +36,11 @@ private struct ListUsersView<ButtonRow: View>: View {
     
     var body: some View {
         NavigationStack {
-            if users.isEmpty {
+            if users.isEmpty && !userViewModel.isLoading {
+                LoadingView().task {
+                    users = await userViewModel.getAllWithIds(ids)
+                }
+            } else if users.isEmpty {
                 VStack {
                     Text("There is nothing to show here.")
                         .font(.largeTitle)
@@ -50,8 +54,6 @@ private struct ListUsersView<ButtonRow: View>: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
-                
-                
             } else {
                 List(searchResults, id: \.id) { user in
                     if currentUserID != user.id {
@@ -64,11 +66,6 @@ private struct ListUsersView<ButtonRow: View>: View {
             }
         }
         .navigationTitle(navigationBarTitle.rawValue)
-        .onAppear {
-            Task {
-                users = await userViewModel.getAllWithIds(ids)
-            }
-        }
     }
     
     var searchResults: [User] {
@@ -124,7 +121,7 @@ struct FollowView: View {
     
     var body: some View {
         ListUsersView(navigationBarTitle: title, ids: coll, currentUserID: provider.user.id) { user in
-            Button(role: title == .following || provider.user.isFollowing(user.id) ? .destructive : nil, action: {
+            Button(action: {
                 Task {
                     await provider.followUser(user)
                 }

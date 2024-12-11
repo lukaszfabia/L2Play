@@ -53,17 +53,16 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func refreshUser(_ user: User) async {
+        self.isLoading = true
+        defer { self.isLoading = false }
+        
         let result: Result<User, Error>  = await performAsyncOperation {
             try await self.manager.read(collection: .users, id: user.id)
         }
         
-        switch result {
-        case .success(let fetchedUser):
-            self.user = fetchedUser
+        if case .success(let success) = result {
+            self.user = success
             self.setInCtx()
-        case .failure(let error):
-            print(error.localizedDescription)
-            self.errorMessage = "Failed to refresh user: \(error.localizedDescription)"
         }
     }
     
@@ -76,8 +75,32 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             return
         }
         
-        let _ = await performAsyncOperation {
-            return try await self.deleteAccountFromFirebase(email: email)
+        // handle followers, following
+        let ra: Result<[User], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .users, ids: [user.id], in: "following")
+        }
+        
+        if case .success(let success) = ra {
+            success.forEach { user in
+                user.following.removeAll{$0 == self.user.id}
+            }
+        }
+        
+        let rb: Result<[User], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .users, ids: [user.id], in: "followers")
+        }
+        
+        
+        if case .success(let success) = rb {
+            success.forEach { user in
+                user.followers.removeAll{$0 == self.user.id}
+            }
+        }
+        
+        _ = await performAsyncOperation { [self] in
+            try await manager.delete(collection: .comments, whereIs: ("author.id", user.id))
+            try await manager.delete(collection: .reviews, whereIs: ("author.id", user.id))
+            return try await deleteAccountFromFirebase(email: email)
         }
     }
     
@@ -245,11 +268,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             try await self.updateFollowStatus(for: otherUser)
         }
         
-        switch r {
-        case .success:
+        if case .success = r {
             self.setInCtx()
-        case .failure:
-            break
         }
     }
     
@@ -283,4 +303,114 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             break
         }
     }
+    
+    
+    func loggedByExternalPlatform() -> Bool {
+        guard let user = Auth.auth().currentUser else {
+            return false
+        }
+        
+        return !user.providerData.contains { $0.providerID == "password" }
+    }
+    
+    
+    private func setProfilePic(pic: UIImage?) async {
+        if let pic {
+            do {
+                let url = try await CloudinaryService.shared.uploadImage(image: pic)
+                self.user.profilePicture = url
+            } catch {
+                print("Failed to update photo")
+            }
+        }
+    }
+    
+    func editMe(firstName: String, lastName: String, pic: UIImage?) async {
+        self.user.firstName = firstName
+        self.user.lastName = lastName
+        
+        await self.setProfilePic(pic: pic)
+        
+        let r: Result<_, Error> = await performAsyncOperation { [self] in
+            try await self.manager.update(collection: .users, id: user.id, object: user)
+        }
+        
+        if case .success = r {
+            self.setInCtx()
+        }
+        
+    }
+    
+    
+    func editMe(firstName: String, lastName: String, email: String, password: String?, pic: UIImage?) async {
+        self.user.firstName = firstName
+        self.user.lastName = lastName
+        
+        if !loggedByExternalPlatform() {
+            guard let currentUser = Auth.auth().currentUser else { return }
+            
+            _ = await performAsyncOperation { [self] in
+                if currentUser.email != email {
+                    try await currentUser.sendEmailVerification(beforeUpdatingEmail: email)
+                    self.user.email = email
+                }
+                
+                if let password {
+                    try await currentUser.updatePassword(to: password)
+                }
+            }
+        }
+        
+        await self.setProfilePic(pic: pic)
+        
+        let r: Result<_, Error> = await performAsyncOperation {
+            try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
+        }
+        
+        if case .success = r {
+            self.setInCtx()
+            await updateAuthor()
+        }
+        
+    }
+    
+    private func updateAuthor() async {
+        let ra: Result<[Comment], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .comments, whereIs: ("author.id", user.id))
+        }
+        
+        let rb: Result<[Review], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .reviews, whereIs: ("author.id", user.id))
+        }
+        
+        let rc: Result<[Post], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .posts, whereIs: ("author.id", user.id))
+        }
+        
+        if case .success(let comments) = ra, case .success(let reviews) = rb, case .success(let posts) = rc {
+            let author = Author(user: user)
+            
+            // update author
+            reviews.forEach {$0.author = author}
+            comments.forEach {$0.author = author}
+            posts.forEach {$0.author = author}
+        }
+    }
+    
+    func fetchRecommendations() async -> [Item] {
+        return []
+        //        let predictedIds: [String] = self._model.predict() ?? []
+        //
+        //
+        //        guard !predictedIds.isEmpty else {return []}
+        //
+        //        let r: Result<[Game], Error> = await performAsyncOperation {
+        //            try await self.manager.findAll(collection: .games, ids: predictedIds)
+        //        }
+        //
+        //        return (try? r.get().map { Item($0) }) ?? []
+    }
+    
 }
+
+

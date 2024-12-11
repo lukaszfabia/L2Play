@@ -14,7 +14,7 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     @Published var user: User?
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
-
+    
     
     init(user: User? = nil) {
         self.user = user
@@ -22,18 +22,17 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     
     
     func refreshUser() async {
+        self.isLoading = true
+        defer { self.isLoading = false }
+        
         guard let user else { return }
         
         let result: Result<User, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .users, id: user.id)
         }
         
-        switch result {
-        case .success(let fetchedUser):
-            self.user = fetchedUser
-        case .failure(let error):
-            print("Failed to refresh user: \(error.localizedDescription)")
-            self.errorMessage = "Failed to refresh user."
+        if case .success(let success) = result {
+            self.user = success
         }
     }
     
@@ -42,33 +41,30 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
             try await self.manager.findAll(collection: .reviews, whereIs: ("author.id", user.id))
         }
         
-        switch r {
-        case .success(let fetchedReviews):
-            return fetchedReviews
-        case .failure:
-            return []
-        }
+        return (try? r.get()) ?? []
     }
     
-
+    
     func fetchUser(with id: String?) async {
         guard let id else {return}
         
         let result: Result<User, Error> = await performAsyncOperation {
-            let user: User = try await self.manager.read(collection: .users, id: id)
-            return user
+            return try await self.manager.read(collection: .users, id: id) as User
         }
         
-        switch result {
-        case .success(let fetchedUser):
-            self.user = fetchedUser
-            break
-        case .failure:
-            break
+        if case .success(let success) = result {
+            self.user = success
         }
+        
     }
     
+    // Get users with provided ids
     func getAllWithIds(_ ids: [String]) async -> [User] {
+        self.isLoading = true
+        defer {
+            self.isLoading = false 
+        }
+        
         if ids.isEmpty {
             return []
         }
@@ -77,12 +73,7 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
             try await self.manager.findAll(collection: .users, ids: ids)
         }
         
-        switch result {
-        case .failure:
-            return []
-        case .success(let fetchedUsers):
-            return fetchedUsers
-        }
+        return (try? result.get()) ?? []
     }
     
     // use it on explore view
@@ -91,33 +82,24 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
             try await self.manager.findAll(collection: .games)
         }
         
-        switch result {
-        case .success(let success):
-            return success
-        case .failure:
-            return []
-        }
+        return (try? result.get()) ?? []
     }
+
     
     func fetchGame(with id: UUID) async -> Game? {
         let result: Result<Game, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .games, id: id.uuidString)
         }
         
-        switch result {
-        case .success(let success):
-            return success
-        case .failure:
-            return nil
-        }
-        
+        return try? result.get()
     }
     
     func fetchRecommendedGames() async -> [Item] {
         return []
     }
     
-    func getReceiverID(for chat: Chat, currentUserID: String) -> String? {
+    func getReceiverID(for chat: Chat?, currentUserID: String?) -> String? {
+        guard let currentUserID, let chat else { return nil }
         return chat.participants.keys.first { $0 != currentUserID }
     }
 }

@@ -32,7 +32,7 @@ struct UserView: View {
 
     var body: some View {
         NavigationStack {
-            if userViewModel.isLoading {
+            if userViewModel.isLoading || provider.isLoading {
                 LoadingView()
             } else if let err = userViewModel.errorMessage {
                 Text(err)
@@ -121,16 +121,13 @@ struct UserView: View {
                         }
                     }
                     .sheet(isPresented: $isSettingsPresented) {
-                        SettingsView()
+                        SettingsView(isSettingsPresented: $isSettingsPresented)
                     }
                     .alert(isPresented: $showErrorAlert) {
                         Alert(title: Text("Error"), message: Text(userViewModel.errorMessage ?? "An unknown error occurred"), dismissButton: .default(Text("OK")))
                     }
                 }
             }
-        }
-        .onAppear {
-            loadData()
         }
         .refreshable {
             loadData()
@@ -222,10 +219,12 @@ struct UserView: View {
             reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
         }
         
-        let dict = currentUser.splitByState()
-        
-        favs = dict[GameState.favorite]?.map { game in
-            Item(game: game)
-        } ?? []
+        DispatchQueue.main.async {
+            let dict = currentUser.splitByState()
+            
+            favs = dict[GameState.favorite]?.map { game in
+                Item(game: game)
+            } ?? []
+        }
     }
 }

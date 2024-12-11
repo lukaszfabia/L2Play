@@ -92,12 +92,12 @@ class FirebaseManager {
        db.collection(collection.rawValue).document(id).delete()
     }
     
-    func findAll<T: Codable & Identifiable>(collection: Collections, ids: [String]? = nil) async throws -> [T] {
+    func findAll<T: Codable & Identifiable>(collection: Collections, ids: [String]? = nil, in field: String? = nil) async throws -> [T] {
         var query: Query = db.collection(collection.rawValue)
         
         if let uids = ids {
             if !uids.isEmpty {
-                query = query.whereField("id", in: uids)
+                query = query.whereField(field ?? "id", in: uids)
             }
         }
         
@@ -130,4 +130,33 @@ class FirebaseManager {
         }
         return objects
     }
+    
+    func delete(collection: Collections, whereIs: (String, Any)) async throws {
+        let query: Query = db.collection(collection.rawValue).whereField(whereIs.0, isEqualTo: whereIs.1)
+        
+        do {
+            let snapshot = try await query.getDocuments()
+            
+            for document in snapshot.documents {
+                try await db.collection(collection.rawValue).document(document.documentID).delete()
+            }
+        } catch {
+            throw error
+        }
+    }
+    
+    func delete(collection: Collections, ids: [UUID], where field: String?=nil) async throws {
+        let query: Query = db.collection(collection.rawValue).whereField(field ?? "id", in: ids.map({$0.uuidString}))
+        
+        do {
+            let snapshot = try await query.getDocuments()
+            
+            for document in snapshot.documents {
+                try await db.collection(collection.rawValue).document(document.documentID).delete()
+            }
+        } catch {
+            throw error
+        }
+    }
+
 }

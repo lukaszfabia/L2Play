@@ -22,6 +22,13 @@ struct Item: Identifiable {
         self.color = Self.randColor()
     }
     
+    init(_ game: Game) {
+        self.title = ""
+        self.subTitle = ""
+        self.game = GameWithState(game: game, state: .notPlayed)
+        self.color = Self.randColor()
+    }
+    
     private static func randColor() -> Color {
         let colors: [Color] = [
             .red, .blue, .accentColor, .green, .yellow, .pink

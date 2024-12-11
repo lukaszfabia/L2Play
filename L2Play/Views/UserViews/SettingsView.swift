@@ -12,6 +12,7 @@ struct SettingsView: View {
     @EnvironmentObject private var settingsHandler: SettingsHandler
     @State private var showDeleteView: Bool = false
     @State private var showLogoutAlert: Bool = false
+    @Binding var isSettingsPresented: Bool
     
     var body: some View {
         NavigationStack {
@@ -43,7 +44,7 @@ struct SettingsView: View {
                             Section(header: Text("Account")
                                 .font(.headline)
                                 .foregroundColor(.primary)) {
-                                    NavigationLink(destination: EditAccountView()) {
+                                    NavigationLink(destination: EditAccountView(isSettingsPresented: $isSettingsPresented)) {
                                         HStack {
                                             Image(systemName: "person.crop.circle")
                                                 .foregroundColor(.blue)

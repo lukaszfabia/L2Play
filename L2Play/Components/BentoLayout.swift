@@ -19,7 +19,8 @@ struct BentoBoxView: View {
                         .font(.headline)
                     
                     Text(game.studio)
-                        .font(.largeTitle)
+                        .lineLimit(1)
+                        .font(.title)
                 }
                 .padding()
                 .background(.primary.opacity(0.1))

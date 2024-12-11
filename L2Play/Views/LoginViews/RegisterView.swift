@@ -120,7 +120,7 @@ struct RegisterView: View {
                 .padding()
                 .navigationTitle("Create Account")
                 .navigationDestination(isPresented: $provider.isAuthenticated) {
-                    HomeView()
+                    HomeView(postViewModel: PostViewModel(user: provider.user))
                 }
             }
         }

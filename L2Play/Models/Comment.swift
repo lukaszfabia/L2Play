@@ -8,12 +8,12 @@
 import Foundation
 
 /// Represents comment
-struct Comment: Codable, Identifiable {
+class Comment: Codable, Identifiable {
     private(set) var id: UUID = .init()
     private let reviewID: UUID
     let createdAt: Date
     let comment: String
-    let author: Author
+    var author: Author
     
     
     init(reviewID: UUID, comment: String, author: Author) {

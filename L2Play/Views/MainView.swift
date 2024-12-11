@@ -7,14 +7,6 @@
 
 import SwiftUI
 
-struct HomeView: View {
-    // TODO: implement home view, like Twitter or github has
-    
-    var body: some View {
-        Text("glowna")
-    }
-}
-
 struct MainView: View {
     @EnvironmentObject var provider: AuthViewModel
     @State private var presentSideMenu = false
@@ -38,7 +30,7 @@ struct MainView: View {
     
     private func AuthenticatedView() -> some View {
         TabView {
-            HomeView()
+            HomeView(postViewModel: PostViewModel(user: provider.user))
                 .tabItem {
                     Image(systemName: "house")
                     Text("Home")

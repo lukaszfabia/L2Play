@@ -18,7 +18,7 @@ struct UserRow<RowButton: View>: View {
             UserImage(pic: user.profilePicture)
             
             VStack(alignment: .leading) {
-                NavigationLink(destination: UserView(user: user), label: {
+                NavigationLink(destination: LazyUserView(userID: user.id, userViewModel: UserViewModel()), label: {
                     Text(user.firstName ?? "Unknown")
                         .font(.title3)
                         .fontWeight(.semibold)

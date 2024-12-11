@@ -2,15 +2,17 @@ import Foundation
 import FirebaseDatabase
 import Combine
 
-class ChatViewModel: ObservableObject {
+class ChatViewModel: ObservableObject, AsyncOperationHandler {
+    private let manager = FirebaseManager()
+    
     private var ref: DatabaseReference!
-    private var chatID: UUID?
+    private var chatID: String?
     
     @Published var isLoading: Bool = false
     @Published var chat: Chat? = nil
     @Published var errorMessage: String?
-
-    init(chatID: UUID?) {
+    
+    init(chatID: String?) {
         self.chatID = chatID
         self.ref = Database.database().reference()
         
@@ -24,11 +26,10 @@ class ChatViewModel: ObservableObject {
     }
     
     func findOrCreateChat(participants: [String: Author], completion: @escaping (Chat?) -> Void) {
-        isLoading = true
+        self.isLoading = true
         let chatsRef = ref.child("chats")
         
-        chatsRef.observeSingleEvent(of: .value) { [weak self] snapshot in
-            guard let self = self else { return }
+        chatsRef.observeSingleEvent(of: .value) { snapshot in
             self.isLoading = false
             
             if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
@@ -37,25 +38,29 @@ class ChatViewModel: ObservableObject {
                       let chatParticipants = chatData["participants"] as? [String: Any] else {
                     return false
                 }
+                
+                
                 return Set(chatParticipants.keys) == Set(participants.keys)
             }) as? DataSnapshot {
-                
                 let chat = self.recreateChat(from: existingChatSnapshot)
                 self.chatID = chat?.id
-                
                 completion(chat)
-                
             } else {
                 self.createChat(participants: participants) { newChat in
+                    
+                    Task {
+                        await self.appendChatToUsers(lhs: Array(participants.keys)[0], rhs: Array(participants.keys)[1], chatID: newChat?.id ?? "")
+                    }
                     completion(newChat)
                 }
             }
         }
     }
-
     
     private func createChat(participants: [String: Author], completion: @escaping (Chat?) -> Void) {
         let chatsRef = ref.child("chats").childByAutoId()
+        let chatrefID = chatsRef.key! // lets assert it
+        
         let chatData: [String: Any] = [
             "participants": participants.mapValues { author in
                 [
@@ -67,29 +72,30 @@ class ChatViewModel: ObservableObject {
             "messages": []
         ]
         
+        print("Attempting to create a new chat with data:", chatData)
+        
         chatsRef.setValue(chatData) { [weak self] error, _ in
             guard let self = self else { return }
             if let error = error {
+                print("Error during chat creation:", error.localizedDescription)
                 self.errorMessage = "Failed to create chat: \(error.localizedDescription)"
                 completion(nil)
             } else {
-                let newChatID = UUID(uuidString: chatsRef.key ?? UUID().uuidString) ?? UUID()
-                let newChat = Chat(id: newChatID, participants: participants, messages: [])
-                self.chatID = newChatID
-                completion(newChat)
-                self.listenForMessages(chatID: newChatID)
+                self.chat = Chat(id: chatrefID, participants: participants, messages: [])
+                completion(self.chat)
+                self.listenForMessages(chatID: chatrefID)
             }
         }
     }
-
+    
     func sendMessage(text: String, senderID: String) {
         guard let chatID = chatID else {
             errorMessage = "No chat available to send message."
             return
         }
-        
-        isLoading = true
-        let messagesRef = ref.child("chats").child(chatID.uuidString).child("messages").childByAutoId()
+
+        self.isLoading = true
+        let messagesRef = ref.child("chats").child(chatID).child("messages").childByAutoId()
         let messageData: [String: Any] = [
             "text": text,
             "senderID": senderID,
@@ -105,8 +111,21 @@ class ChatViewModel: ObservableObject {
         }
     }
 
-    private func listenForMessages(chatID: UUID) {
-        let messagesRef = ref.child("chats").child(chatID.uuidString).child("messages")
+    private func listenForMessages(chatID: String) {
+        let messagesRef = ref.child("chats").child(chatID).child("messages")
+        
+        messagesRef.observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+            var messages: [Message] = []
+            
+            for child in snapshot.children {
+                guard let snap = child as? DataSnapshot,
+                      let message = Message(snapshot: snap) else { continue }
+                messages.append(message)
+            }
+            
+            self.chat?.messages = messages
+        }
         
         messagesRef.observe(.childAdded) { [weak self] snapshot in
             guard let self = self else { return }
@@ -116,19 +135,36 @@ class ChatViewModel: ObservableObject {
         }
     }
 
+
+    
     private func addMessage(_ message: Message) {
+        guard let chatID = chatID else { return }
+
         if var currentChat = chat {
             currentChat.messages.append(message)
             chat = currentChat
         } else {
-            chat = Chat(id: chatID ?? UUID(), participants: [:], messages: [message])
+            Task {
+                let result: Result<User, Error> = await performAsyncOperation {
+                    try await self.manager.read(collection: .users, id: message.senderID)
+                }
+                switch result {
+                case .success(let user):
+                    let participants: [String: Author] = [message.senderID: Author(user: user)]
+                    chat = Chat(id: chatID, participants: participants, messages: [message])
+                case .failure:
+                    break
+                }
+            }
         }
     }
 
+
+    
     private func recreateChat(from snapshot: DataSnapshot) -> Chat? {
         guard let chatData = snapshot.value as? [String: Any],
-              let participantsData = chatData["participants"] as? [String: [String: String]],
-              let messagesData = chatData["messages"] as? [[String: Any]] else {
+              let participantsData = chatData["participants"] as? [String: [String: String]]
+        else {
             return nil
         }
         
@@ -138,15 +174,85 @@ class ChatViewModel: ObservableObject {
             return Author(id: id, name: name, profilePicture: profilePicture)
         }
         
-        let messages = messagesData.compactMap { data -> Message? in
+        let messagesData = (chatData["messages"] as? [String: [String: Any]])?.compactMap { key, data -> Message? in
             guard let text = data["text"] as? String,
-                  let senderIDString = data["senderID"] as? String,
-                  let senderID = UUID(uuidString: senderIDString),
-                  let timestamp = data["timestamp"] as? Double else { return nil }
-            return Message(text: text, senderID: senderID, timestamp: timestamp)
+                  let senderID = data["senderID"] as? String,
+                  let timestamp = data["timestamp"] as? Double else {
+                return nil
+            }
+            return Message(id: key, text: text, senderID: senderID, timestamp: timestamp)
+        } ?? []
+        
+        return Chat(id: snapshot.key, participants: participants, messages: messagesData)
+    }
+
+    
+    private func appendChatToUsers(lhs: String, rhs: String, chatID: String) async {
+        let result: Result<[User], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .users, ids: [lhs, rhs])
         }
         
-        return Chat(id: UUID(uuidString: snapshot.key) ?? UUID(), participants: participants, messages: messages)
+        if case .success(let users) = result {
+            for u in users {
+                u.chats.append(chatID)
+            }
+            
+            _ = await performAsyncOperation {
+                try await self.manager.update(collection: .users, id: users[0].id, object: users[0])
+                try await self.manager.update(collection: .users, id: users[1].id, object: users[1])
+            }
+            
+        }
     }
+    
+    func findChat(completion: @escaping (Chat?) -> Void)  {
+        self.isLoading = true
+        let chatsRef = ref.child("chats")
+        
+        chatsRef.observeSingleEvent(of: .value) { snapshot in
+            self.isLoading = false
+            
+            if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
+                guard let snap = snap as? DataSnapshot,
+                    let _ = snap.value as? [String: Any] else {
+                    return false
+                }
+                return snap.key == self.chatID!
+            }) as? DataSnapshot {
+                let chat = self.recreateChat(from: existingChatSnapshot)
+                self.chat = chat
+                completion(chat)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+
+    func observeChatMessages() {
+        let messagesRef = ref.child("chats").child(chatID!).child("messages")
+        
+
+        var messageIDs: Set<String> = []
+     
+        messagesRef.observe(.value) { snapshot in
+            var messages: [Message] = []
+            for child in snapshot.children {
+                if let snap = child as? DataSnapshot, let message = Message(snapshot: snap) {
+                    messages.append(message)
+                    messageIDs.insert(message.id)
+                }
+            }
+            self.chat?.messages = messages.sorted { $0.timestamp < $1.timestamp }
+        }
+        
+        messagesRef.observe(.childAdded) { snapshot in
+            if let newMessage = Message(snapshot: snapshot), !messageIDs.contains(newMessage.id) {
+                self.chat?.messages.append(newMessage)
+                self.chat?.messages.sort { $0.timestamp < $1.timestamp }
+                messageIDs.insert(newMessage.id)
+            }
+        }
+    }
+
 
 }

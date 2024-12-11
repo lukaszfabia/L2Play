@@ -83,6 +83,7 @@ struct GameView: View {
             Text(gameViewModel.game.name)
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .multilineTextAlignment(.center)
             HStack {
                 Text(gameViewModel.game.releaseYear)
                     .foregroundStyle(.gray)

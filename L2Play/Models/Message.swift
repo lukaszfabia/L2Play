@@ -6,13 +6,12 @@ extension Message {
     init?(snapshot: DataSnapshot) {
         guard let messageData = snapshot.value as? [String: Any],
               let text = messageData["text"] as? String,
-              let senderIDString = messageData["senderID"] as? String,
-              let senderID = UUID(uuidString: senderIDString),
+              let senderID = messageData["senderID"] as? String,
               let timestamp = messageData["timestamp"] as? Double else {
             return nil
         }
         
-        self.id = UUID(uuidString: snapshot.key) ?? UUID()
+        self.id = snapshot.key 
         self.text = text
         self.senderID = senderID
         self.timestamp = timestamp
@@ -21,27 +20,14 @@ extension Message {
 
 
 
-struct Message: Identifiable {
-    private(set) var id: UUID = .init()
+struct Message {
+    private(set) var uid: UUID = .init()
+    var id: String
     var text: String
-    var senderID: UUID
-    var timestamp: Double // since 1970
+    var senderID: String
+    var timestamp: Double
     
-    init(text: String, senderID: UUID) {
-        self.id = .init()
-        self.text = text
-        self.senderID = senderID
-        self.timestamp = Date().timeIntervalSince1970
-    }
-    
-    init(text: String, senderID: UUID, timestamp: Double) {
-        self.id = .init()
-        self.text = text
-        self.senderID = senderID
-        self.timestamp = timestamp
-    }
-    
-    func isMe(_ senderID: UUID) -> Bool {
-        self.senderID == senderID
+    func isMe(_ currID: String) -> Bool {
+        return senderID == currID
     }
 }

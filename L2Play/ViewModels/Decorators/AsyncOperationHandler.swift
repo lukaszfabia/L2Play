@@ -28,10 +28,7 @@ protocol AsyncOperationHandler: ObservableObject {
 
 
 extension AsyncOperationHandler {
-    public func performAsyncOperation<T>(_ operation: @escaping () async throws -> T) async -> Result<T, Error> {
-        self.isLoading = true
-        defer {self.isLoading = false} // go reference
-        
+    public func performAsyncOperation<T>(_ operation: @escaping () async throws -> T) async -> Result<T, Error> {        
         do {
             let result = try await operation()
             self.errorMessage = nil // reset error message 

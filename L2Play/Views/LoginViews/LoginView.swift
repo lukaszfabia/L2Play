@@ -125,8 +125,8 @@ struct LoginView: View {
                 }
                 .padding()
                 .navigationTitle("Login")
-                .navigationDestination(isPresented:$provider.isAuthenticated) {
-                    HomeView()
+                .navigationDestination(isPresented: $provider.isAuthenticated) {
+                    HomeView(postViewModel: PostViewModel(user: provider.user))
                 }
             }
         }

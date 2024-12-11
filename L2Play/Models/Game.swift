@@ -114,9 +114,6 @@ class Game: Codable, Identifiable {
     let tags: [String]
     let pictures: [URL]
     let description : String
-    var popularity: Int // treat as a card
-    var community: Int // for ppl who at least playing game
-    var rating: Double
     let platform: [String]
     let multiplayerSupport: Bool
     
@@ -128,18 +125,67 @@ class Game: Codable, Identifiable {
         self.tags = []
         self.pictures = []
         self.description = ""
-        self.popularity = 0
-        self.community = 0
-        self.rating = 0
+        self._popularity = 0
+        self._community = []
+        self._rating = 0
         self.platform = []
         self.multiplayerSupport = false
         self._releaseYear = nil
         self._price = nil
     }
     
+    init(name: String, studio: String, tags: [String], pictures:[URL], description: String, platform: [String], multiplayerSupport: Bool, price: Double, releaseYear: Int){
+        self.name = name
+        self.studio = studio
+        self.tags = tags
+        self.pictures = pictures
+        self.description = description
+        self.platform = platform
+        self.multiplayerSupport = multiplayerSupport
+        
+        self._price = price
+        self._popularity = 0
+        self._rating = 0
+        self._community = []
+        
+        self._releaseYear = releaseYear
+    }
+    
     
     private var _releaseYear: Int?
     private var _price: Double?
+    private var _community: [String]
+    private var _popularity: Int
+    private var _rating: Double
+
+    var rating: Double {
+        get {
+            return _rating
+        }
+        set {
+            _rating = newValue
+        }
+    }
+    
+    var popularity: Int {
+        get {
+            return _popularity
+        } set {_popularity = newValue }
+    }
+    
+    var community: Int {
+        get {
+            return _community.count
+        }
+    }
+    
+    func expandCommunity(_ id: String) {
+        _community.append(id)
+    }
+    
+    func removeFromCommunity(_ id: String) {
+        _community.removeAll{ id == $0 }
+    }
     
     var releaseYear: String {
         if let r = _releaseYear {

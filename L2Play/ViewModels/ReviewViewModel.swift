@@ -118,13 +118,16 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
         let newReport = ReportedReview(whoReported: user.id, reason: reason, reviewID: review.id)
         
         do {
-            let _ = try self.manager.create(collection: .reported_reviews, object: newReport)
+            _ = try self.manager.create(collection: .reported_reviews, object: newReport)
         } catch {
             self.errorMessage = "Failed to report review"
         }
     }
     
     func fetchGameByID() async -> Game? {
+        self.isLoading = true
+        defer { self.isLoading = false }
+        
         let r: Result<Game, Error> = await performAsyncOperation {
             try await self.manager.read(collection: .games, id: self.review.gameID.uuidString)
         }

@@ -21,7 +21,7 @@ struct MessageBubble: View {
                 Text(message.text)
                     .padding()
                     .background(isCurrentUser ? Color.accentColor : Color.gray.opacity(0.2))
-                    .foregroundColor(isCurrentUser ? .white : .black)
+                    .foregroundColor(.primary)
                     .cornerRadius(12)
                     .frame(maxWidth: 250, alignment: isCurrentUser ? .trailing : .leading)
                 

@@ -88,9 +88,8 @@ struct BlockedPeopleView: View {
         ListUsersView(navigationBarTitle: .blocked, ids: provider.user.blockedUsers) { user in
             Button(role: .destructive) {
                 Task {
-                    print(provider.user.blockedUsers)
-                    //                    var u = user
-                    //                    await provider.toogleBlockUser(&u)
+                    var u = user
+                    await provider.toogleBlockUser(&u)
                 }
             } label: {
                 Text("Unblock")

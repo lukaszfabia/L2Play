@@ -67,10 +67,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func deleteAccount(email: String) async {
-        self.isLoading = true
-        
+        // fix add remove from ctx 
         if !AuthValidator.compare(providedEmail: email, currentEmail: user.email) {
-            self.isLoading = false
             self.errorMessage = "Entered email is not the same as your current email."
             return
         }
@@ -100,8 +98,12 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         _ = await performAsyncOperation { [self] in
             try await manager.delete(collection: .comments, whereIs: ("author.id", user.id))
             try await manager.delete(collection: .reviews, whereIs: ("author.id", user.id))
+            try await manager.delete(collection: .posts, whereIs: ("author.id", user.id))
+            
             return try await deleteAccountFromFirebase(email: email)
         }
+        
+    
     }
     
     private func deleteAccountFromFirebase(email: String) async throws {
@@ -337,6 +339,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         
         if case .success = r {
             self.setInCtx()
+            await updateAuthor()
         }
         
     }
@@ -363,8 +366,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         
         await self.setProfilePic(pic: pic)
         
-        let r: Result<_, Error> = await performAsyncOperation {
-            try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
+        let r: Result<_, Error> = await performAsyncOperation { [self] in
+            try await self.manager.update(collection: .users, id: user.id, object: user)
         }
         
         if case .success = r {
@@ -387,14 +390,33 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             try await manager.findAll(collection: .posts, whereIs: ("author.id", user.id))
         }
         
-        if case .success(let comments) = ra, case .success(let reviews) = rb, case .success(let posts) = rc {
+        if case .success(var comments) = ra, case .success(var reviews) = rb, case .success(var posts) = rc {
             let author = Author(user: user)
             
             // update author
-            reviews.forEach {$0.author = author}
-            comments.forEach {$0.author = author}
-            posts.forEach {$0.author = author}
+            reviews = reviews.map {$0.updateAuthor(author)}
+            comments = comments.map {$0.updateAuthor(author)}
+            posts = posts.map {$0.updateAuthor(author)}
+            
+            print(posts)
+            
+            _ = await performAsyncOperation{ [self] in
+                
+                // updated only when it necessary
+                if !posts.isEmpty {
+                    try await manager.updateAll(collection: .posts, lst: posts)
+                }
+                
+                if !reviews.isEmpty {
+                    try await manager.updateAll(collection: .reviews, lst: reviews)
+                }
+                
+                if !comments.isEmpty {
+                    try await manager.updateAll(collection: .comments, lst: comments)
+                }
+            }
         }
+        
     }
     
     func fetchRecommendations() async -> [Item] {

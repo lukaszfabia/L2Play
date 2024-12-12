@@ -9,7 +9,7 @@ import FirebaseFirestore
 import FirebaseAuth
 
 class FirebaseManager {
-    private let db = Firestore.firestore()
+    private let _db = Firestore.firestore()
     
     
     /// Simple creating objects without checking
@@ -19,7 +19,7 @@ class FirebaseManager {
     /// - Returns: created object
     func create<T: Codable>(collection: Collections, object: T) throws -> T {
         do {
-            try db.collection(collection.rawValue).addDocument(from: object)
+            try _db.collection(collection.rawValue).addDocument(from: object)
             return object
         } catch {
             let error = NSError(
@@ -30,6 +30,7 @@ class FirebaseManager {
         }
     }
     
+    
     func create<T: Codable>(
         collection: Collections,
         object: T,
@@ -37,7 +38,7 @@ class FirebaseManager {
         uniqueValues: [Any]? = nil,
         customID: String
     ) async throws -> T {
-        var q: Query = db.collection(collection.rawValue)
+        var q: Query = _db.collection(collection.rawValue)
         
         if let uf = uniqueFields, let uv = uniqueValues, !uf.isEmpty && !uv.isEmpty && uf.count == uv.count {
             for (field, value) in zip(uf, uv) {
@@ -52,7 +53,7 @@ class FirebaseManager {
         }
         
         do {
-            let q = db.collection(collection.rawValue)
+            let q = _db.collection(collection.rawValue)
             
             try q.document(customID).setData(from: object)
 
@@ -63,8 +64,9 @@ class FirebaseManager {
         
     }
     
+    
     func read<T: Codable & Identifiable>(collection: Collections, id: String) async throws -> T {
-        let snapshot = try await db.collection(collection.rawValue).document(id).getDocument()
+        let snapshot = try await _db.collection(collection.rawValue).document(id).getDocument()
 
         
         guard snapshot.exists else {
@@ -77,23 +79,22 @@ class FirebaseManager {
     }
     
     
-    
     func update<T: Codable & Identifiable>(collection: Collections, id: String, object: T) async throws {
         guard !id.isEmpty else {
             throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "ID was not provided"])
         }
         
         let data = try Firestore.Encoder().encode(object)
-        try await db.collection(collection.rawValue).document(id).setData(data)
+        try await _db.collection(collection.rawValue).document(id).setData(data)
     }
     
     
     func delete(collection: Collections, id: String)  {
-       db.collection(collection.rawValue).document(id).delete()
+       _db.collection(collection.rawValue).document(id).delete()
     }
     
     func findAll<T: Codable & Identifiable>(collection: Collections, ids: [String]? = nil, in field: String? = nil) async throws -> [T] {
-        var query: Query = db.collection(collection.rawValue)
+        var query: Query = _db.collection(collection.rawValue)
         
         if let uids = ids {
             if !uids.isEmpty {
@@ -118,7 +119,7 @@ class FirebaseManager {
     ///   - tuple: key - value, tuple e.g ("name", "ABC")
     /// - Returns: object/s that will be selected
     func findAll<T: Codable & Identifiable>(collection: Collections, whereIs: (String, Any), order: String? = nil) async throws -> [T] {
-        var query: Query = db.collection(collection.rawValue).whereField(whereIs.0, isEqualTo: whereIs.1)
+        var query: Query = _db.collection(collection.rawValue).whereField(whereIs.0, isEqualTo: whereIs.1)
         if let o = order {
             query = query.order(by: o)
         }
@@ -132,13 +133,13 @@ class FirebaseManager {
     }
     
     func delete(collection: Collections, whereIs: (String, Any)) async throws {
-        let query: Query = db.collection(collection.rawValue).whereField(whereIs.0, isEqualTo: whereIs.1)
+        let query: Query = _db.collection(collection.rawValue).whereField(whereIs.0, isEqualTo: whereIs.1)
         
         do {
             let snapshot = try await query.getDocuments()
             
             for document in snapshot.documents {
-                try await db.collection(collection.rawValue).document(document.documentID).delete()
+                try await _db.collection(collection.rawValue).document(document.documentID).delete()
             }
         } catch {
             throw error
@@ -146,17 +147,40 @@ class FirebaseManager {
     }
     
     func delete(collection: Collections, ids: [UUID], where field: String?=nil) async throws {
-        let query: Query = db.collection(collection.rawValue).whereField(field ?? "id", in: ids.map({$0.uuidString}))
+        let query: Query = _db.collection(collection.rawValue).whereField(field ?? "id", in: ids.map({$0.uuidString}))
         
         do {
             let snapshot = try await query.getDocuments()
             
             for document in snapshot.documents {
-                try await db.collection(collection.rawValue).document(document.documentID).delete()
+                try await _db.collection(collection.rawValue).document(document.documentID).delete()
             }
         } catch {
             throw error
         }
     }
+    
+    
+    /// Update all objects from list
+    /// - Parameters:
+    ///   - collection: table where it will be updated 
+    ///   - lst: list with obejcts to update
+    func updateAll<T: Codable & Identifiable>(collection: Collections, lst: [T]) async throws {
+        guard !lst.isEmpty else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "List was empty"])
+        }
+
+        // transaction
+        let batch = _db.batch()
+        for elem in lst {
+            let data = try Firestore.Encoder().encode(elem)
+            let documentRef = _db.collection(collection.rawValue).document("\(elem.id)")
+            batch.setData(data, forDocument: documentRef)
+        }
+        
+        //try to commit transation
+        try await batch.commit()
+    }
+
 
 }

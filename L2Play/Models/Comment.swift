@@ -22,4 +22,9 @@ class Comment: Codable, Identifiable {
         self.comment = comment
         self.author = author
     }
+    
+    func updateAuthor(_ newAuthor: Author) -> Comment {
+        self.author = newAuthor
+        return self
+    }
 }

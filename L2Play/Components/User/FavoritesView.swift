@@ -41,7 +41,7 @@ private struct GameData<T: GameKey>: Identifiable, Equatable {
     }
 
 }
-
+// TODO: move preprocess game to user viwe 
 struct FavoritesView: View {
     @Binding var favs: [Item]
     @ObservedObject var userViewModel: UserViewModel
@@ -124,6 +124,8 @@ struct FavoritesView: View {
     private func preprocessGames() async {
         guard let user = userViewModel.user else {return}
         
+        triedToFetch = true
+        
         stateData = GameData<GameState>
             .toList(lst: user.computeGameStateAndCard())
         
@@ -133,5 +135,8 @@ struct FavoritesView: View {
         
         tagsData = GameData<String>
             .toList(lst: user.computeFavoriteTags(games: games), max: 5)
+        
+        print(tagsData)
+        
     }
 }

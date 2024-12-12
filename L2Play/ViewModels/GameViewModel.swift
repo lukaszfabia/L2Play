@@ -31,7 +31,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func refreshGame() async {
-         _ = await performAsyncOperation {
+        _ = await performAsyncOperation {
             await self.fetchReviewsForGame()
         }
         
@@ -46,6 +46,9 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     
     func addGame(state: GameState) async {
         user.toggleGame(game: game, state: state)
+        
+        //remove games tagged as a not pxlayed
+        self.user.games = self.user.games.filter{$0.state != .notPlayed}
         
         let result: Result<_, Error> =  await performAsyncOperation {
             try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
@@ -95,7 +98,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
                 }
                 break
             case .failure:
-               return
+                return
             }
             
         } else {
@@ -123,23 +126,23 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         } else if state == .dropped {
             self.game.removeFromCommunity(user.id)
         }
-
+        
         let w1: Double = 0.3 // weight reviews
         let w2: Double = 0.4 // weight rating
         let w3: Double = 0.2 // weight "dropped"
         let w4a: Double = 0.1 // weight "playing"
         let w4b: Double = 0.1 // weight "completed"
         let w5: Double = 0.2 // community weight
-
+        
         let reviewsCount = Double(reviews.count)
-
+        
         var dict: [GameState: Int] = [:]
-
+        
         // get all users game with current preprocessed game state - cardinality
         let result: Result<[User], Error> = await performAsyncOperation { [self] in
             try await self.manager.findAll(collection: .users, whereIs: ("games.gameID", game.id.uuidString))
         }
-
+        
         if case .success(let users) = result {
             users.forEach { user in
                 user.games
@@ -155,7 +158,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         let completedCount = Double(dict[.completed] ?? 0)
         let droppedCount = Double(dict[.dropped] ?? 0)
         let communityWeight = Double(game.community)
-
+        
         // normalize to minimum
         let normalizedReviews = normalize(value: reviewsCount, min: 0, max: 1000)
         let normalizedRating = normalize(value: game.rating, min: 0, max: 10, inverse: true)
@@ -163,7 +166,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         let normalizedCompletedCount = normalize(value: completedCount, min: 0, max: 100)
         let normalizedDroppedCount = normalize(value: droppedCount, min: 0, max: 100)
         let normalizedCommunityWeight = normalize(value: communityWeight, min: 0, max: 500)
-
+        
         let popularity = Int(
             w1 * normalizedReviews +
             w2 * normalizedRating +
@@ -174,13 +177,13 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         )
         
         self.game.popularity = popularity
-
+        
         
         _ = await performAsyncOperation{ [self] in
             try await manager.update(collection: .games, id: game.id.uuidString, object: game)
         }
     }
-
+    
     private func normalize(value: Double, min: Double, max: Double, inverse: Bool = false) -> Double {
         let normalizedValue = (value - min) / (max - min)
         return inverse ? 1 - normalizedValue : normalizedValue

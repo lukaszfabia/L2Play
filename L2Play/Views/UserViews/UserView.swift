@@ -218,7 +218,7 @@ struct UserView: View {
     private func loadData() async {
         guard !userViewModel.isLoading else { return }
         
-        triedToFetch.toggle()
+        triedToFetch = true 
         
         await userViewModel.refreshUser()
         reviews = await userViewModel.fetchReviewsForUser(user: currentUser)

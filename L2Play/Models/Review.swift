@@ -91,4 +91,10 @@ class Review: Codable, Identifiable {
     func isDisliked(by userID: String) -> Bool {
         return dislikes.contains(userID)
     }
+    
+    func updateAuthor(_ newAuthor: Author) -> Review {
+        self.author = newAuthor
+        return self
+    }
+    
 }

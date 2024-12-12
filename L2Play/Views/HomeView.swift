@@ -146,7 +146,7 @@ struct PostForm: View {
                 .foregroundStyle(.gray)
             
             TextEditor(text: $content)
-                .padding(4)
+                .padding(16)
                 .frame(height: 150)
                 .font(.body)
                 .background(Color(.systemGray6))

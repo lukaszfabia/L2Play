@@ -17,11 +17,10 @@ struct LazyGameView: View {
             if let game {
                 GameView(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
             } else {
-                ProgressView("Loading game")
-                    .task {
-                        game = await userViewModel.fetchGame(with: gameID)
-                    }
+                LoadingView()
             }
+        }.task {
+            game = await userViewModel.fetchGame(with: gameID)
         }
     }
 }

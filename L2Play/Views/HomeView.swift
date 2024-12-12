@@ -23,7 +23,6 @@ struct HomeView: View {
                 LoadingView().task {
                     await loadPosts()
                     triedToFetch.toggle()
-                    recommendations = await provider.fetchRecommendations()
                 }
             } else {
                 NavigationStack {
@@ -59,6 +58,8 @@ struct HomeView: View {
         guard !postViewModel.isLoading else {return}
         await postViewModel.fetchPosts()
         self.posts = postViewModel.posts
+        
+        recommendations = await provider.fetchRecommendations()
     }
 
     

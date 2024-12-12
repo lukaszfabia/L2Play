@@ -77,9 +77,13 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     // use it on explore view
-    func fetchGames() async -> [Game] {
+    func fetchGames(ids: [UUID] = []) async -> [Game] {
         let result: Result<[Game], Error> = await performAsyncOperation {
-            try await self.manager.findAll(collection: .games)
+            if ids.isEmpty {
+                try await self.manager.findAll(collection: .games)
+            } else {
+                try await self.manager.findAll(collection: .games, ids: ids.map{$0.uuidString})
+            }
         }
         
         return (try? result.get()) ?? []

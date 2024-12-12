@@ -118,9 +118,9 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     private func updatePopularityAndCommunity(for state: GameState) async {
-        if state != .notPlayed {
+        if state != .notPlayed && !self.game.userInCommunity(user.id) {
             self.game.expandCommunity(user.id)
-        } else {
+        } else if state == .dropped {
             self.game.removeFromCommunity(user.id)
         }
 
@@ -185,8 +185,6 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         let normalizedValue = (value - min) / (max - min)
         return inverse ? 1 - normalizedValue : normalizedValue
     }
-
-    
     
     private func updateGameRating() async {
         guard !reviews.isEmpty else { return }

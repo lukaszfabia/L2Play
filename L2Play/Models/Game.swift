@@ -180,6 +180,10 @@ class Game: Codable, Identifiable {
         }
     }
     
+    func userInCommunity(_ userID: String) -> Bool {
+        return _community.contains(userID)
+    }
+    
     func expandCommunity(_ id: String) {
         _community.append(id)
     }

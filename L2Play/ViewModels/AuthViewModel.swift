@@ -398,17 +398,23 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func fetchRecommendations() async -> [Item] {
-        return []
-        //        let predictedIds: [String] = self._model.predict() ?? []
-        //
-        //
-        //        guard !predictedIds.isEmpty else {return []}
-        //
-        //        let r: Result<[Game], Error> = await performAsyncOperation {
-        //            try await self.manager.findAll(collection: .games, ids: predictedIds)
-        //        }
-        //
-        //        return (try? r.get().map { Item($0) }) ?? []
+        let r: Result<[Game], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .games)
+        }
+        
+        guard case .success(let games) = r else { return [] }
+        
+        
+        let model = RecommendationService(allGames: games, userGames: user.games)
+        let predictedIds: [String] = model.predict()
+        
+        guard !predictedIds.isEmpty else { return [] }
+        
+        let rec: Result<[Game], Error> = await performAsyncOperation {
+            try await self.manager.findAll(collection: .games, ids: predictedIds)
+        }
+        
+        return (try? rec.get().map { Item($0) }) ?? []
     }
     
 }

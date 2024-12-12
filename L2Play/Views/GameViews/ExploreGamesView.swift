@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ExploreGamesView: View {
-//    @EnvironmentObject private var provider: AuthViewModel
+    @EnvironmentObject private var provider: AuthViewModel
     @StateObject private var userViewModel: UserViewModel
     @State private var filteredGames: [Game] = []
     @State private var games: [Game] = []
@@ -32,28 +32,15 @@ struct ExploreGamesView: View {
                     if recommendations.isEmpty {
                         Text("There is no recommendations for you yet.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.gray)
                             .padding()
                     } else {
                         CustomPageSlider(data: $recommendations) { $item in
-                            NavigationLink(
-                                destination: LazyGameView(gameID: item.game.id, userViewModel: userViewModel)) {
-                                    GameRecommendationView(game: item.game)
+                            NavigationLink(destination: LazyGameView(gameID: item.game.gameID, userViewModel: UserViewModel(user: provider.user))) {
+                                GameRecommendationView(game: item.game)
                             }
-                        } titleContent: { $item in
-                            VStack(spacing: 10) {
-                                Text(item.title)
-                                    .font(.title.bold())
-                                Text(item.subTitle)
-                                    .multilineTextAlignment(.center)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                    .frame(height: 45)
-                                    .padding(.bottom, 5)
-                            }
-                        }
-                        .padding(.top, 20)
-                        .padding([.horizontal, .bottom], 35)
+                        } titleContent: { _ in }
+                            .safeAreaPadding([.horizontal, .vertical], 10)
                     }
                     
                     if searchText.isEmpty {
@@ -73,7 +60,7 @@ struct ExploreGamesView: View {
         .onAppear {
             Task {
                 games = await userViewModel.fetchGames()
-                recommendations = await userViewModel.fetchRecommendedGames()
+                recommendations = await provider.fetchRecommendations()
             }
         }
     }

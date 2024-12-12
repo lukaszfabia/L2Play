@@ -61,16 +61,20 @@ class User: Codable, Identifiable, Hashable {
         }
     }
     
-    func splitOnDate(with state: GameState) -> [Int: [GameWithState]] {
-        var dict: [Int: [GameWithState]] = [:]
-        
-        for game in games where game.state == state {
-            let year = game.updatedAt.getYear()
-            dict[year, default: []].append(game)
-        }
-        
-        return dict
+    func computeGameStateAndCard() -> [[GameState: Int]] {
+        return Dictionary(grouping: games, by: \.state)
+            .mapValues{$0.count}
+            .map{[$0.key : $0.value]}
     }
+    
+    func computeFavoriteTags(games: [Game]) -> [[String: Int]] {
+        return games.map { game in
+            game.tags.reduce(into: [:]) { counts, tag in
+                counts[tag, default: 0] += 1
+            }
+        }
+    }
+
 
     
     func splitByState() -> [GameState: [GameWithState]] {

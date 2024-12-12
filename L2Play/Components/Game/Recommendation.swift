@@ -22,6 +22,7 @@ struct GameRecommendationView: View {
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
                 
                 HStack (spacing: 5) {
                     Text(game.studio)
@@ -32,7 +33,7 @@ struct GameRecommendationView: View {
                         .font(.caption)
                         .foregroundStyle(.gray)
                     
-                    Text(game.state.rawValue)
+                    Text(game.state == .notPlayed ? "Not played" : game.state.rawValue)
                         .font(.caption)
                         .foregroundStyle(.gray)
                 }

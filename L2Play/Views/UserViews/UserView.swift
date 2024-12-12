@@ -10,18 +10,20 @@ import SwiftUI
 struct UserView: View {
     @EnvironmentObject private var provider: AuthViewModel // for me
     @StateObject private var userViewModel: UserViewModel
-
+    
     @State private var favs: [Item] = []
     @State private var reviews: [Review] = []
-
+    
     @State private var selectedTab = 0
     @State private var isSettingsPresented = false
     @State private var showErrorAlert = false
     
+    @State private var triedToFetch: Bool = false
+    
     init(user: User?) {
         self._userViewModel = StateObject(wrappedValue: UserViewModel(user: user))
     }
-
+    
     private var currentUser: User {
         userViewModel.user ?? provider.user
     }
@@ -29,11 +31,13 @@ struct UserView: View {
     private var isReadOnly: Bool {
         userViewModel.user != provider.user
     }
-
+    
     var body: some View {
         NavigationStack {
-            if userViewModel.isLoading || provider.isLoading {
-                LoadingView()
+            if reviews.isEmpty && !triedToFetch {
+                LoadingView().task {
+                    await loadData()
+                }
             } else if let err = userViewModel.errorMessage {
                 Text(err)
             } else {
@@ -50,7 +54,7 @@ struct UserView: View {
                                 youBlockedUser()
                             }
                         }
-
+                        
                         
                         Picker(selection: $selectedTab, label: Text("Menu")) {
                             Text("Favourites").tag(0)
@@ -116,7 +120,7 @@ struct UserView: View {
                                         .font(.title3)
                                         .foregroundColor(.primary)
                                 }
-
+                                
                             }
                         }
                     }
@@ -130,7 +134,7 @@ struct UserView: View {
             }
         }
         .refreshable {
-            loadData()
+            await loadData()
         }
     }
     
@@ -185,7 +189,7 @@ struct UserView: View {
         )
         .padding(.vertical, 8)
     }
-
+    
     @ViewBuilder
     private func actionButtons() -> some View {
         if isReadOnly {
@@ -210,16 +214,17 @@ struct UserView: View {
             .padding([.vertical, .horizontal], 5)
         }
     }
-
-    private func loadData() {
+    
+    private func loadData() async {
         guard !userViewModel.isLoading else { return }
-
-        Task {
-            await userViewModel.refreshUser()
-            reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
-        }
+        
+        triedToFetch.toggle()
+        
+        await userViewModel.refreshUser()
+        reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
         
         DispatchQueue.main.async {
+            // split games by state
             let dict = currentUser.splitByState()
             
             favs = dict[GameState.favorite]?.map { game in

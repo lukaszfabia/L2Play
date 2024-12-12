@@ -80,6 +80,7 @@ struct FavoriteGamesRow: View {
                         .foregroundStyle(.primary)
                         .lineLimit(2)
                         .truncationMode(.tail)
+                        .multilineTextAlignment(.leading)
                     
                     HStack(spacing: 5) {
                         Text(game.studio)

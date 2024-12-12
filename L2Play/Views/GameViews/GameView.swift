@@ -14,34 +14,41 @@ struct GameView: View {
     @State private var selectedState: GameState = .notPlayed
     @State private var fav: Bool = false
     
+    @State private var triedToFetch: Bool = false
+    
     var body: some View {
-        Game()
-            .refreshable {
-                await gameViewModel.refreshGame()
-                await provider.refreshUser(provider.user)
+        if gameViewModel.reviews.isEmpty && !triedToFetch {
+            LoadingView().task {
+                selectedState = provider.user.getCurrentGameState(where: gameViewModel.game.id)
+                await gameViewModel.fetchReviewsForGame()
+                
+                triedToFetch.toggle()
             }
-            .sheet(isPresented: $isPresentedReviewForm) {
-                NavigationStack {
-                    ReviewForm(
-                        gv: gameViewModel,
-                        closeForm: $isPresentedReviewForm
-                    )
-                    .navigationTitle("Create Review")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .onDisappear {
-                        Task {
-                            await gameViewModel.refreshGame()
+        }
+        else if triedToFetch {
+            Game()
+                .refreshable {
+                    triedToFetch.toggle()
+                    await gameViewModel.refreshGame()
+                    await provider.refreshUser(provider.user)
+                }
+                .sheet(isPresented: $isPresentedReviewForm) {
+                    NavigationStack {
+                        ReviewForm(
+                            gv: gameViewModel,
+                            closeForm: $isPresentedReviewForm
+                        )
+                        .navigationTitle("Create Review")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .onDisappear {
+                            Task {
+                                await gameViewModel.refreshGame()
+                            }
                         }
                     }
                 }
-            }
-            .onAppear {
-                selectedState = provider.user.getCurrentGameState(where: gameViewModel.game.id)
-                Task {
-                    await gameViewModel.fetchReviewsForGame()
-                }
-            }
-            .navigationTitle("Game")
+                .navigationTitle("Game")
+        }
     }
     
     private func Game() -> some View {
@@ -141,6 +148,9 @@ struct GameView: View {
                     selectedState = newState
                 }
             }
+            
+            await provider.refreshUser(provider.user)
+            
             HapticManager.shared.generateHapticFeedback(style: .light)
         }
     }

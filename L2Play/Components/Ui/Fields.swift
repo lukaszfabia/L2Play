@@ -8,30 +8,93 @@
 import SwiftUI
 import Combine
 
+private struct CustomSecureField: View {
+    @State var placeholder: String
+    @Binding var password: String
+    @FocusState private var focused: focusedField?
+    @State private var showPassword: Bool = false
+    @State private var internalPassword: String
+    @State private var keepInternalPassword = false
+    
+    init(placeholder : String, password: Binding<String>) {
+        _internalPassword = State(initialValue: password.wrappedValue)
+        _password = password
+        _placeholder = State(wrappedValue: placeholder)
+    }
+    
+    var body: some View {
+        HStack {
+            ZStack(alignment: .trailing) {
+                TextField(placeholder, text: $internalPassword)
+                    .focused($focused, equals: .unSecure)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .keyboardType(.alphabet)
+                    .opacity(showPassword ? 1 : 0)
+                
+                SecureField(placeholder, text: $internalPassword)
+                    .focused($focused, equals: .secure)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .opacity(showPassword ? 0 : 1)
+                
+                Button(action: {
+                    showPassword.toggle()
+                    focused = focused == .secure ? .unSecure : .secure
+                }, label: {
+                    Image(systemName: self.showPassword ? "eye.slash.fill" : "eye.fill")
+                        .padding()
+                })
+                .onChange(of: focused, initial: false) { oldValue, newValue in
+                    if newValue == .secure && oldValue == .unSecure {
+                        keepInternalPassword = true
+                    }
+                }
+                .onChange(of: internalPassword, initial: false) { oldValue, newValue in
+                    if keepInternalPassword {
+                        DispatchQueue.main.async {
+                            keepInternalPassword = false
+                            internalPassword = oldValue
+                        }
+                        return
+                    }
+                    password = internalPassword
+                }
+            }
+        }
+    }
+    
+    enum focusedField {
+        case secure, unSecure
+    }
+}
+
 struct CustomFieldWithIcon: View {
     @Binding var acc: String
     let placeholder: String?
     var icon: String = ""
     var isSecure: Bool = false
-    
+
+    @State private var isSecureFieldVisible: Bool = false
+
     var body: some View {
-        HStack {
+        HStack(spacing: 10) {
             if !icon.isEmpty {
                 Image(systemName: icon)
                     .foregroundColor(.gray)
-                    .padding(.leading, 10)
+                    .frame(width: 20, height: 20)
+                    .padding(.leading, 5)
             }
-            
+
             if isSecure {
-                SecureField(placeholder ?? "", text: $acc)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .padding(12)
+                CustomSecureField(placeholder: placeholder ?? "", password: $acc)
             } else {
                 TextField(placeholder ?? "", text: $acc)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .padding(12)
+                    .padding(.vertical, 12)
             }
         }
+        .padding(.horizontal, 12)
         .background(Color(.systemGray6))
         .cornerRadius(12)
         .overlay(
@@ -118,9 +181,9 @@ struct OtpField: View{
                 })
                 .padding(.vertical)
 
-                ButtonWithIcon(color: .accentColor, text: Text("Verify"), icon:"checkmark.circle") {
-                    
-                }
+//                ButtonWithIcon(color: .accentColor, text: Text("Verify"), icon:"checkmark.circle") {
+//                    
+//                }
             }
 
     }

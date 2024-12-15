@@ -35,6 +35,11 @@ class Post: Codable, Identifiable, Hashable {
         return down.count
     }
     
+    func updateAuthor(_ newAuthor: Author) -> Post {
+        self.author = newAuthor
+        return self
+    }
+    
     // MARK: - Hashable & Equatable
     static func ==(lhs: Post, rhs: Post) -> Bool {
          return lhs.id == rhs.id

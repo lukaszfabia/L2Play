@@ -8,64 +8,59 @@
 import SwiftUI
 
 struct ChatRow: View {
-    let authUserID: String
-    @StateObject var userViewModel: UserViewModel
-    @StateObject var chatViewModel: ChatViewModel
-    @State private var chat: Chat? = nil
+    let authUser: User
+    let chatData: ChatData
     
     var body: some View {
-        HStack(spacing: 10) {
-            if userViewModel.user == nil && chat == nil {
-                LoadingView().task {
-                    await loadChatData()
-                }
-            }
-            else if let user = userViewModel.user {
+        let user = chatData.getReceiver(authID: authUser.id)! // assert it
+        NavigationLink(destination: LazyChatView(authUser: authUser, receiverID: user.id, chatID: chatData.chatID)) {
+            HStack (spacing: 10) {
                 UserImage(pic: user.profilePicture)
                 
                 VStack(alignment: .leading) {
-                    HStack(spacing: 5) {
-                        Text(user.firstName ?? "")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text(user.lastName ?? "")
-                            .font(.headline)
-                            .fontWeight(.light)
-                            .foregroundColor(.secondary)
-                    }
+                    Text(user.name)
+                        .font(.headline)
+                        .foregroundColor(.primary)
                     
-                    Text(chat?.messages.last?.text ?? "")
-                        .font(.subheadline)
-                        .lineLimit(1)
-                        .foregroundColor(.secondary)
+                    if let last = chatData.lastMessage {
+                        HStack {
+                            if last.isMe(authUser.id) {
+                                Text("You: ")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("\(chatData.getReceiver(authID: authUser.id)!.name): ")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Text(last.text)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text("Send first message!")
+                            .font(.subheadline)
+                            .lineLimit(1)
+                            .foregroundStyle(.yellow)
+                    }
                 }
                 
                 Spacer()
                 
-                Text(chatViewModel.chat?.messages.last?.timestamp.formatTimestamp() ?? "")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                    .padding(.trailing, 10)
+                if let last = chatData.lastMessage {
+                    Text(last.timestamp.formatTimestamp())
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .padding(.trailing, 10)
+                }
             }
-        }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 15)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-        .shadow(radius: 5)
-    }
-    
-    private func loadChatData() async {
-        if let c = await chatViewModel.findChat() {
-            chat = c
-            if let receiverID = userViewModel.getReceiverID(for: chat, currentUserID: authUserID) {
-                await userViewModel.fetchUser(with: receiverID)
-            } else {
-                print("Receiver ID not found")
-            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+            .shadow(radius: 5)
         }
     }
-
-
 }

@@ -86,7 +86,7 @@ struct ExploreGamesView: View {
             
             LazyVStack(alignment: .leading, spacing: 10) {
                 ForEach(filteredGames, id: \.id) { game in
-                    GameRow(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
+                    GameRow(gameViewModel: GameViewModel(game: game, user: userViewModel.user!), userViewModel: userViewModel)
                 }
             }
             .padding([.horizontal, .top], 20)
@@ -112,7 +112,9 @@ struct ExploreGamesView: View {
             } else {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(games, id: \.id) { game in
-                        GameRow(gameViewModel: GameViewModel(game: game, user: userViewModel.user!))
+                        GameRow(
+                            gameViewModel: GameViewModel(game: game, user: userViewModel.user!),
+                            userViewModel: userViewModel)
                     }
                 }
                 .padding([.horizontal, .top], 20)

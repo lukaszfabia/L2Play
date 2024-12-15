@@ -35,9 +35,11 @@ struct ButtonWithIcon: View {
     var color: Color
     var text: Text
     var icon: String?
-    var action: () -> Void
     var w: CGFloat = 200
     @State private var isPressed = false
+    @Binding var isLoading: Bool
+    
+    var action: () -> Void
     
     var body: some View {
         Button(action: {
@@ -47,12 +49,16 @@ struct ButtonWithIcon: View {
             action()
         }) {
             HStack {
-                if let i = icon {
-                    Image(systemName: i)
-                        .frame(width: 24, height: 24)
+                if isLoading {
+                    LoadingView()
+                } else {
+                    if let i = icon {
+                        Image(systemName: i)
+                            .frame(width: 24, height: 24)
+                    }
+                    text
+                        .font(.headline)
                 }
-                text
-                    .font(.headline)
             }
             .padding()
             .frame(maxWidth: w)

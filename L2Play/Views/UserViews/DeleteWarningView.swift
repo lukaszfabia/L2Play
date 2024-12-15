@@ -53,7 +53,7 @@ struct DeleteAccountView: View {
                 
                 Spacer().frame(height: 20)
                 
-                ButtonWithIcon(color: .red, text: Text("Delete"), icon: "xmark"){
+                ButtonWithIcon(color: .red, text: Text("Delete"), icon: "xmark", isLoading: $provider.isLoading){
                     showConfirmationAlert.toggle()
                 }
                 .frame(width: 200, height: 50)

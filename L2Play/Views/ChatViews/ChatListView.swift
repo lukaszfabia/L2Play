@@ -9,20 +9,29 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject private var provider: AuthViewModel
-    @State private var userViewModels: [String: UserViewModel] = [:]
     @State private var showSearchPpl = false
+    @StateObject private var chatViewModel: ChatViewModel = .init()
+    
+    @State private var chats: [ChatData] = []
     
     var body: some View {
         NavigationStack {
             Group {
-                if provider.user.chats.isEmpty {
+                if provider.isLoading {
+                    LoadingView()
+                }
+                else if let err = chatViewModel.errorMessage {
+                    Text(err)
+                }
+                else if chats.isEmpty {
                     emptyChatView
                 } else {
                     chatList
                 }
+            }.task {
+                await loadChats()
             }
-        }
-        .navigationTitle("Chat")
+            .navigationTitle("Chat")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showSearchPpl.toggle() }) {
@@ -31,11 +40,12 @@ struct ChatListView: View {
                 }
             }
             .refreshable {
-                await provider.refreshUser(provider.user)
+                await loadChats()
             }
             .sheet(isPresented: $showSearchPpl) {
-                SearchForPplView(uv: UserViewModel(user: provider.user))
+                SearchForPplView()
             }
+        }
     }
     
     private var emptyChatView: some View {
@@ -46,7 +56,7 @@ struct ChatListView: View {
                 .fontWeight(.bold)
                 .padding()
             
-            NavigationLink(destination: SearchForPplView(uv: UserViewModel(user: provider.user))) {
+            NavigationLink(destination: SearchForPplView()) {
                 Text("Search for people to talk from your following profiles!")
                     .font(.headline)
                     .padding()
@@ -59,25 +69,17 @@ struct ChatListView: View {
     
     private var chatList: some View {
         ScrollView {
-            ForEach(provider.user.chats, id: \.self) { id in
-                NavigationLink(destination: ChatView(chatViewModel: ChatViewModel(chatID: id), receiverViewModel: userViewModels[id] ?? createUserViewModel(for: id))) {
-                    ChatRow(
-                        authUserID: provider.user.id,
-                        userViewModel: userViewModels[id] ?? createUserViewModel(for: id),
-                        chatViewModel: ChatViewModel(chatID: id)
-                    )
-                    .padding(.horizontal, 5)
-                }
+            ForEach(chats) { chat in
+                ChatRow(authUser: provider.user, chatData: chat)
             }
         }
     }
     
-    private func createUserViewModel(for chatID: String) -> UserViewModel {
-        if let existingViewModel = userViewModels[chatID] {
-            return existingViewModel
-        }
-        let newViewModel = UserViewModel()
-        userViewModels[chatID] = newViewModel
-        return newViewModel
+    private func loadChats() async {
+        // get user chats
+        // take only participants and
+        // detect who is receiver and return Author in the future take last msg
+        self.chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats)
     }
+    
 }

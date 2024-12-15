@@ -1,23 +1,43 @@
+//
+//  ChatViewModel.swift
+//  L2Play
+//
+//  Created by Lukasz Fabia on 09/10/2024.
+//
+
 import Foundation
 import FirebaseDatabase
 import Combine
 
+@MainActor
 class ChatViewModel: ObservableObject, AsyncOperationHandler {
     private let manager = FirebaseManager()
-    
     private var ref: DatabaseReference!
     private var chatID: String?
+    private var observers: [DatabaseHandle] = []
     
     @Published var isLoading: Bool = false
-    @Published var chat: Chat? = nil
+    @Published var chat: Chat?
     @Published var errorMessage: String?
+    @Published var messages: [Message] = []
     
-    init(chatID: String?) {
+    var sender: User? = nil
+    var receiver: User? = nil
+    
+    init(chatID: String? = nil, sender: User? = nil, receiver: User? = nil) {
         self.chatID = chatID
         self.ref = Database.database().reference()
         
+        self.sender = sender
+        self.receiver = receiver
+        
         if let chatID = chatID {
-            listenForMessages(chatID: chatID)
+            fetchChat(chatID: chatID)
+            listenForMessages()
+        } else if let sender, let receiver {
+            Task {
+                await createNewChat(sender: sender, receiver: receiver)
+            }
         }
     }
     
@@ -25,241 +45,186 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
         self.ref = Database.database().reference()
     }
     
-    func findOrCreateChat(participants: [String: Author], completion: @escaping (Chat?) -> Void) {
-        self.isLoading = true
-        defer {self.isLoading = false}
-        let chatsRef = ref.child("chats")
+    deinit {
+        DispatchQueue.main.async { [weak self] in
+            self?.removeObservers()
+        }
+    }
+    
+
+    var getMessages: [Message] {
+        guard let chat else { return [] }
+        return chat.messages.reversed()
+    }
+
+
+    func fetchChat(chatID: String) {
+        isLoading = true
+        let path = ref.child("chats").child(chatID)
         
-        chatsRef.observeSingleEvent(of: .value) { snapshot in
+        path.observeSingleEvent(of: .value) { snapshot in
+            self.isLoading = false
+            guard let chatData = snapshot.value as? [String: Any] else {
+                self.errorMessage = "Failed to load chat data"
+                return
+            }
             
-            if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
-                guard let snap = snap as? DataSnapshot,
-                      let chatData = snap.value as? [String: Any],
-                      let chatParticipants = chatData["participants"] as? [String: Any] else {
-                    return false
-                }
-                
-                
-                return Set(chatParticipants.keys) == Set(participants.keys)
-            }) as? DataSnapshot {
-                let chat = self.recreateChat(from: existingChatSnapshot)
-                self.chatID = chat?.id
-                completion(chat)
+            if let chat = Chat(from: chatData, chatID: chatID) {
+                self.chat = chat
+                self.messages = chat.messages
             } else {
-                self.createChat(participants: participants) { newChat in
-                    
-                    Task {
-                        await self.appendChatToUsers(lhs: Array(participants.keys)[0], rhs: Array(participants.keys)[1], chatID: newChat?.id ?? "")
-                    }
-                    completion(newChat)
-                }
+                self.errorMessage = "Failed to parse chat data"
             }
         }
     }
-    
-    private func createChat(participants: [String: Author], completion: @escaping (Chat?) -> Void) {
-        let chatsRef = ref.child("chats").childByAutoId()
-        let chatrefID = chatsRef.key! // lets assert it
+
+
+    func createNewChat(sender: User, receiver: User) async {
+        isLoading = true
+        defer { isLoading = false }
         
-        let chatData: [String: Any] = [
-            "participants": participants.mapValues { author in
-                [
-                    "name": author.name,
-                    "profilePicture": author.profilePicture?.absoluteString ?? "",
-                    "id": author.id
-                ]
-            },
-            "messages": []
-        ]
-        
-        print("Attempting to create a new chat with data:", chatData)
-        
-        chatsRef.setValue(chatData) { [weak self] error, _ in
-            guard let self = self else { return }
-            if let error = error {
-                print("Error during chat creation:", error.localizedDescription)
-                self.errorMessage = "Failed to create chat: \(error.localizedDescription)"
-                completion(nil)
-            } else {
-                self.chat = Chat(id: chatrefID, participants: participants, messages: [])
-                completion(self.chat)
-                self.listenForMessages(chatID: chatrefID)
-            }
-        }
-    }
-    
-    func sendMessage(text: String, senderID: String) {
-        guard let chatID = chatID else {
-            errorMessage = "No chat available to send message."
+        let newChatRef = ref.child("chats").childByAutoId()
+        guard let chatID = newChatRef.key else {
+            self.errorMessage = "Failed to generate chat ID"
             return
         }
-
-        self.isLoading = true
-        let messagesRef = ref.child("chats").child(chatID).child("messages").childByAutoId()
-        let messageData: [String: Any] = [
-            "text": text,
-            "senderID": senderID,
-            "timestamp": Date().timeIntervalSince1970
+        
+        let participants: [String: Author] = [
+            sender.id: Author(user: sender),
+            receiver.id: Author(user: receiver)
         ]
         
-        messagesRef.setValue(messageData) { [weak self] error, _ in
-            guard let self = self else { return }
-            if let error = error {
-                self.errorMessage = "Error sending message: \(error.localizedDescription)"
-            }
-            self.isLoading = false
-        }
-    }
+        let newChat = Chat(id: chatID, participants: participants, messages: [])
+        self.chat = newChat
 
-    private func listenForMessages(chatID: String) {
-        let messagesRef = ref.child("chats").child(chatID).child("messages")
-        
-        messagesRef.observeSingleEvent(of: .value) { [weak self] snapshot in
-            guard let self = self else { return }
-            var messages: [Message] = []
-            
-            for child in snapshot.children {
-                guard let snap = child as? DataSnapshot,
-                      let message = Message(snapshot: snap) else { continue }
-                messages.append(message)
-            }
-            
-            self.chat?.messages = messages
-        }
-        
-        messagesRef.observe(.childAdded) { [weak self] snapshot in
-            guard let self = self else { return }
-            if let newMessage = Message(snapshot: snapshot) {
-                self.addMessage(newMessage)
-            }
-        }
-    }
-
-
-    
-    private func addMessage(_ message: Message) {
-        guard let chatID = chatID else { return }
-
-        if var currentChat = chat {
-            currentChat.messages.append(message)
-            chat = currentChat
-        } else {
-            Task {
-                let result: Result<User, Error> = await performAsyncOperation {
-                    try await self.manager.read(collection: .users, id: message.senderID)
-                }
-                switch result {
-                case .success(let user):
-                    let participants: [String: Author] = [message.senderID: Author(user: user)]
-                    chat = Chat(id: chatID, participants: participants, messages: [message])
-                case .failure:
-                    break
-                }
-            }
-        }
-    }
-
-
-    
-    private func recreateChat(from snapshot: DataSnapshot) -> Chat? {
-        guard let chatData = snapshot.value as? [String: Any],
-              let participantsData = chatData["participants"] as? [String: [String: String]]
-        else {
-            return nil
-        }
-        
-        let participants = participantsData.compactMapValues { dict -> Author? in
-            guard let name = dict["name"], let id = dict["id"] else { return nil }
-            let profilePicture = dict["profilePicture"]
-            return Author(id: id, name: name, profilePicture: profilePicture)
-        }
-        
-        let messagesData = (chatData["messages"] as? [String: [String: Any]])?.compactMap { key, data -> Message? in
-            guard let text = data["text"] as? String,
-                  let senderID = data["senderID"] as? String,
-                  let timestamp = data["timestamp"] as? Double else {
-                return nil
-            }
-            return Message(id: key, text: text, senderID: senderID, timestamp: timestamp)
-        } ?? []
-        
-        return Chat(id: snapshot.key, participants: participants, messages: messagesData)
-    }
-
-    
-    private func appendChatToUsers(lhs: String, rhs: String, chatID: String) async {
-        let result: Result<[User], Error> = await performAsyncOperation {
-            try await self.manager.findAll(collection: .users, ids: [lhs, rhs])
-        }
-        
-        if case .success(let users) = result {
-            for u in users {
-                u.chats.append(chatID)
-            }
-            
-            _ = await performAsyncOperation {
-                try await self.manager.update(collection: .users, id: users[0].id, object: users[0])
-                try await self.manager.update(collection: .users, id: users[1].id, object: users[1])
-            }
-            
-        }
-    }
-    
-    
-    /// Finds chat, retruns and set it 
-    /// - Returns: chat or nil
-    func findChat() async -> Chat? {
-        self.isLoading = true
-        defer { self.isLoading = false }
-        return await withCheckedContinuation { continuation in
-            let chatsRef = ref.child("chats")
-            
-            chatsRef.observeSingleEvent(of: .value) { snapshot in
-                if let existingChatSnapshot = snapshot.children.allObjects.first(where: { snap in
-                    guard let snap = snap as? DataSnapshot,
-                          let _ = snap.value as? [String: Any] else {
-                        return false
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                ref.child("chats").child(newChat.id).setValue(newChat.toDictionary()) { error, _ in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
                     }
-                    return snap.key == self.chatID!
-                }) as? DataSnapshot {
-                    let chat = self.recreateChat(from: existingChatSnapshot)
-                    self.chat = chat
-                    continuation.resume(returning: chat)
-                } else {
-                    continuation.resume(returning: nil)
                 }
             }
+            
+            try await manager.updateAll(collection: .users, lst: [sender.addNewChat(chatID: chatID), receiver.addNewChat(chatID: chatID)])
+        } catch {
+            self.errorMessage = "Failed to create chat: \(error.localizedDescription)"
         }
     }
 
-    func observeChatMessages() {
-        self.isLoading = true
-        defer {self.isLoading = false}
-        
-        let messagesRef = ref.child("chats").child(chatID!).child("messages")
+
+    func listenForMessages() {
+        guard let chat = chat else { return }
         
 
-        var messageIDs: Set<String> = []
-     
-        messagesRef.observe(.value) { snapshot in
-            var messages: [Message] = []
+        let messagesRef = ref.child("chats").child(chat.id).child("messages")
+        
+
+        let query = messagesRef.queryOrdered(byChild: "timestamp")
+        
+
+        query.observeSingleEvent(of: .value) { snapshot in
             for child in snapshot.children {
-                if let snap = child as? DataSnapshot, let message = Message(snapshot: snap) {
-                    messages.append(message)
-                    messageIDs.insert(message.id)
+                if let snap = child as? DataSnapshot,
+                   let message = Message(snapshot: snap) {
+                    chat.addMessage(message: message)
+                    self.messages.append(message)
                 }
             }
-            self.chat?.messages = messages.sorted { $0.timestamp < $1.timestamp }
         }
         
-        messagesRef.observe(.childAdded) { snapshot in
-            if let newMessage = Message(snapshot: snapshot), !messageIDs.contains(newMessage.id) {
-                self.chat?.messages.append(newMessage)
-                self.chat?.messages.sort { $0.timestamp < $1.timestamp }
-                messageIDs.insert(newMessage.id)
+
+        let addedObserver: DatabaseHandle = query.observe(.childAdded) { snapshot in
+            if let newMessage = Message(snapshot: snapshot) {
+                chat.addMessage(message: newMessage)
+                self.messages.append(newMessage)
             }
+        }
+        
+        observers.append(addedObserver)
+    }
+
+
+    func removeObservers() {
+        guard let chat else { return }
+        for handle in observers {
+            ref.child("chats").child(chat.id).child("messages").removeObserver(withHandle: handle)
+        }
+        observers.removeAll()
+    }
+
+    func sendMessage(text: String) async  {
+        guard let sender else {
+            errorMessage = "No sender or receiver"
+            return
+        }
+        
+        guard let chat = chat else {
+            errorMessage = "Chat not initialized"
+            return
+        }
+        
+        let messagesRef = ref.child("chats").child(chat.id).child("messages")
+        let newMessageRef = messagesRef.childByAutoId()
+        
+        let message = Message(
+            text: text, senderID: sender.id
+        )
+        
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                newMessageRef.setValue(message.toDictionary()) { error, _ in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                }
+            }
+            
+            chat.addMessage(message: message)
+            self.messages.append(message) 
+
+        } catch {
+            self.errorMessage = "Failed to send message: \(error.localizedDescription)"
         }
     }
 
 
+    func fetchChatsData(chatsIDs: [String]) async -> [ChatData] {
+        isLoading = true
+        defer { isLoading = false }
+        
+        var chatsData: [ChatData] = []
+        
+        let path = ref.child("chats")
+        
+        for chatID in chatsIDs {
+            do {
+                let snapshot = try await path.child(chatID).getData()
+                
+                guard let dictionary = snapshot.value as? [String: Any] else {
+                    throw NSError(domain: "FirebaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid chat data for ID: \(chatID)"])
+                }
+
+                if let chat = ChatData(from: dictionary, chatID: chatID) {
+                    chatsData.append(chat)
+                } else {
+                    print("Failed to create ChatData for chatID: \(chatID)")
+                }
+            } catch {
+                print("Error fetching data for chatID: \(chatID), Error: \(error.localizedDescription)")
+            }
+        }
+        
+        return chatsData
+    }
+
+    
+    func getLastMessage() -> UUID? {
+        guard let chat else { return nil }
+        return chat.messages.last?.id
+    }
 }

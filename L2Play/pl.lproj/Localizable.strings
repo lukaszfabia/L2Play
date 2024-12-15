@@ -19,14 +19,14 @@
 
 
 // user view
-"Followers" = "Obserwujący: ";
-"Following" = "Obserwujesz: ";
+"Followers: " = "Obserwujący: ";
+"Following: " = "Obserwujesz: ";
 
 "Edit" = "Edytuj";
 
 "Games" = "Gry";
 
-"Joined" = "Dołączono: ";
+"Joined: " = "Dołączono: ";
 
 "Your" = "Twoje";
 
@@ -60,10 +60,12 @@
 
 "Blocked users" = "Zablokowani użytkownicy";
 
+"or" = "lub";
 
-"NoteSignUp" = "Rejestrując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
 
-"NoteSignIn" = "Logując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
+"By signing up, you agree to our Terms of Service and Privacy Policy." = "Rejestrując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
+
+"By signing in, you agree to our Terms of Service and Privacy Policy." = "Logując się, akceptujesz nasze Warunki świadczenia usług i Politykę prywatności.";
 
 
 "First name" = "Imię";
@@ -72,33 +74,61 @@
 
 "Password" = "Hasło";
 
-"Sign up" = "Zarejestruj się";
+"Sign Up" = "Zarejestruj się";
+"Sign In" = "Zaloguj";
 
 "Create Account" = "Stwórz Konto";
 
-"ValidPassword" = "Jak stworzyć silne hasło?";
+"Here your daily recommendations!" = "Oto twoje rekomendacje!";
+"Start Chatting with people!" = "Zacznij pisać z ludźmi!";
+"Search for people to talk from your following profiles!" = "Możesz ich znaleźć w profilach, które obserwujesz!";
+"Current states of your games" = "Statystyki twoich list z grami";
+"Your most popular tags" = "Ulubione tagi";
+"Share" = "Udostępnij";
+"Review Details" = "Szczegóły Recenzji";
+"Home" = "Główna";
+"Chat" = "Czat";
+"Explore Games" = "Odkrywaj Gry";
 
-"ValidPassword0" = "Jak stworzyć silne hasło?";
-"ValidPassword1" = "Min. 8 znaków";
-"ValidPassword2" = "Max. 30 znaków";
-"ValidPassword3" = "Przynajmniej jedna cyfra";
-"ValidPassword4" = "Przynajmniej jedna wielka litera";
+"Upcoming Adventures" = "Nadchodzące przygody";
+"Games you're excited to start." = "Gry, które chcesz rozpocząć";
+"Current Quests" = "Aktualne zadania";
+"Games you're immersed in right now." = "Gry, w które aktualnie się angażujesz";
+"Victorious Journeys" = "Zwycięskie podróże";
+"Games you've conquered." = "Gry, które ukończyłeś";
+"Paused Dreams" = "Wstrzymane marzenia";
+"Games you've set aside for now." = "Gry, które odłożyłeś na później";
+"Reviews" = "Recenzje";
+"Stats" = "Statystyki";
+"Dark Mode" = "Tryb nocny";
+"Change Languauge" = "Zmień język";
+"Appearnce" = "Wygląd";
+"Langauge" = "Język";
+"Title" = "Tytuł";
+"Append media for posts!" = "Dołącz zdjęcie!";
+"Post" = "Opublikuj";
+"Be first!" = "Bądź pierwszy";
+
+
+
+"How to make valid password?" = "Jak stworzyć silne hasło?";
+
+"At least 1 Big letter." = "Przynajmniej jedna wielka litera";
+"At least 1 Digit." = "Przynajmniej jedna cyfra";
+"Mininum 6 characters" = "Co namniej 6 znaków długości";
+"At least 1 Special Sign" = "Przynajmniej jeden znak specjalny";
 
 "Aleardy have an account?" = "Masz już konto?";
 
 
-"SignUpWith0" = "Zarejestruj się";
-"SignUpWith1" = "adresem email";
-
-"or" = "lub";
+"Get Started with Email" = "Zarejestruj się przez Email";
 
 
 "Welcome" = "Witaj";
 "back" = "z powrotem";
 
-
-"LogInPrompt0" = "Czas wrócić do gry!";
-"LogInPrompt1" = " Zaloguj się, aby uzyskać dostęp do swojego konta!"; // change it
+"Time to get back in the game!" = "Czas wrócić do gry!";
+"Log in to access your account!" = "Zaloguj się, aby uzyskać dostęp do swojego konta!"; // change it
 
 "Don't have an account?" = "Nie masz konta?";
 "Forgot password?" = "Nie pamiętasz hasła?";
@@ -181,3 +211,21 @@
 "Choose your rating for game." = "Przyznaj od gwiadki grze.";
 "Star rating (1-5)" = "Oceny w gwiazdkach (1-5)";
 "Submit review" = "Opublikuj";
+"now" = "teraz";
+"Content" = "Treść";
+
+"There is nothing to show here." = "Nic tu nie ma.";
+"Check back later or try refreshing the page." = "Wróć potem lub odśwież profil.";
+
+"Unfollow" = "Odfolowuj";
+"Following" = "Obserwujesz";
+"Follow" = "Obserwuj";
+"Unblock" = "Odblokuj";
+
+
+
+/// dynamic
+"greeting" = "Cześć, %@!";
+"welcoming" = "Witaj, %@!";
+"fellingsAboutGame" = "Podziel się wrażeniami z %@.";
+"block" = "Zablokuj %@";

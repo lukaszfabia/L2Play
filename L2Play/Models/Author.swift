@@ -32,4 +32,33 @@ struct Author: Codable {
     init(user: User) {
         self.init(id: user.id, name: user.fullName(), profilePicture: user.profilePicture)
     }
+    
+    init?(from decoder: [String: Any]) {
+        guard
+            let id = decoder["id"] as? String,
+            let name = decoder["name"] as? String
+        else {
+            return nil
+        }
+        
+        let profilePicture = decoder["profilePicture"] as? String
+
+        self.id = id
+        self.name = name
+        self.profilePicture = profilePicture.flatMap { URL(string: $0) }
+    }
+
+    
+    func toDictionary() -> [String: Any] {
+        var dictionary: [String: Any] = [
+            "id": id,
+            "name": name
+        ]
+        
+        if let profilePicture = profilePicture {
+            dictionary["profilePicture"] = profilePicture.absoluteString
+        }
+        
+        return dictionary
+    }
 }

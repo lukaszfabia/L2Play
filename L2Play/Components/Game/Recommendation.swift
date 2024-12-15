@@ -28,6 +28,7 @@ struct GameRecommendationView: View {
                     Text(game.studio)
                         .font(.caption)
                         .foregroundStyle(.gray)
+                        .lineLimit(1)
                     
                     Text("|")
                         .font(.caption)

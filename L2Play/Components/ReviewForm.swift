@@ -1,6 +1,6 @@
 //
 //  ReviewForm.swift
-//  ios
+//  L2Play
 //
 //  Created by Lukasz Fabia on 25/10/2024.
 //
@@ -9,10 +9,11 @@
 import SwiftUI
 
 struct ReviewForm: View {
-    @StateObject var gv: GameViewModel
+    @ObservedObject var gv: GameViewModel
     @Binding var closeForm: Bool
     @State var review : String = ""
-    @State var rating : Int = 0
+    @State var rating : Int = 1
+    @State private var isSubmitting : Bool = false
     
     
     private let options = [1, 2, 3, 4, 5]
@@ -72,30 +73,49 @@ struct ReviewForm: View {
                 .padding(.bottom)
                 
                 
-                Button(action: {
-                    Task {
-                        await gv.addReview(content: review, rating: rating)
-                        if gv.errorMessage != nil {
-                            HapticManager.shared.generateNotificationFeedback(type: .error)
-                        } else {
-                            HapticManager.shared.generateNotificationFeedback(type: .success)
+                Button(action: submit){
+                    if isSubmitting {
+                        LoadingView()
+                    } else {
+                        HStack{
+                            Image(systemName: "paperplane")
+                            Text("Submit review")
                         }
-                        closeForm.toggle()
                     }
-                }){
-                    HStack{
-                        Image(systemName: "paperplane")
-                        Text("Submit review")
-                    }
-                }.padding()
-                    .frame(maxWidth: 200)
-                    .foregroundColor(.white)
-                    .background(Color.accentColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                }
+                .disabled(review.isEmpty)
+                .padding()
+                .frame(maxWidth: 200)
+                .foregroundColor(.white)
+                .background(review.isEmpty ? Color.gray : Color.accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 25))
                 
                 Spacer()
             }
         }
         .padding()
+    }
+    
+    private func submit() {
+        isSubmitting = true
+        defer {
+            isSubmitting = false
+        }
+        
+        Task {
+            if !review.isEmpty && rating > 0 && rating < 6 {
+                await gv.addReview(content: review, rating: rating)
+                if gv.errorMessage != nil {
+                    HapticManager.shared.generateNotificationFeedback(type: .error)
+                } else {
+                    HapticManager.shared.generateNotificationFeedback(type: .success)
+                }
+                
+                review = ""
+                rating = 1
+                
+                closeForm.toggle()
+            }
+        }
     }
 }

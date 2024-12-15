@@ -45,7 +45,7 @@ struct ProfileHeaderView<ActionSection: View>: View {
                     .foregroundStyle(.secondary)
                 
                 NavigationLink(destination: FollowView(user: user, title: .followers), label: {
-                    Text("Followers")
+                    Text("Followers: ")
                         .foregroundStyle(.secondary)
                         .fontWeight(.light)
                     +
@@ -54,7 +54,7 @@ struct ProfileHeaderView<ActionSection: View>: View {
                 }).buttonStyle(PlainButtonStyle())
                 
                 NavigationLink(destination: FollowView(user: user, title: .following), label: {
-                    Text("Following")
+                    Text("Following: ")
                         .foregroundStyle(.secondary)
                         .fontWeight(.light)
                     +
@@ -63,7 +63,7 @@ struct ProfileHeaderView<ActionSection: View>: View {
                 }).buttonStyle(PlainButtonStyle())
                 
                 if let res = user.createdAt.getMonthAndYear() {
-                    Text("Joined")
+                    Text("Joined: ")
                         .foregroundStyle(.secondary)
                         .fontWeight(.light)
                     

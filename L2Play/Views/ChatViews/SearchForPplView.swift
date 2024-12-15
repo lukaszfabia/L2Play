@@ -7,51 +7,67 @@
 
 import SwiftUI
 
-
 struct SearchForPplView: View {
     @EnvironmentObject private var provider: AuthViewModel
     @State private var filteredProfiles: [User] = []
     @State private var profiles: [User] = []
     @State private var searchedText: String = ""
-    @State private var selectedChat: Chat? = nil
-    @ObservedObject var uv: UserViewModel
+    @State private var selectedChat: ChatData? = nil
     
+    @StateObject private var chatViewModel: ChatViewModel = .init()
+    @StateObject private var userViewModel: UserViewModel = .init()
+    
+    @State private var choosenOne: User?
+    
+    @State private var path = NavigationPath()
+
     var body: some View {
-        VStack {
-            if profiles.isEmpty && !uv.isLoading {
-                LoadingView().task {
-                    profiles = await uv.getAllWithIds(provider.user.following)
-                    filterProfiles()
-                }
-            } else if profiles.isEmpty {
-                Text("No people to chat")
-                    .font(.headline)
-                    .padding()
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.center)
-            } else {
-                List(filteredProfiles) { profile in
-                    Button {
-                        createOrSelectChat(with: profile)
-                    } label: {
-                        userRow(profile: profile)
+        NavigationStack(path: $path) {
+            VStack {
+                if userViewModel.isLoading {
+                    LoadingView()
+                } else if profiles.isEmpty {
+                    Text("No people to chat")
+                        .font(.headline)
+                        .padding()
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    List(filteredProfiles) { profile in
+                        Button {
+                            createOrSelectChat(with: profile)
+             
+                            path.append(profile.id)
+                        } label: {
+                            userRow(profile: profile)
+                        }
                     }
-                }
-                .searchable(text: $searchedText, prompt: "Search for people...")
-                .onChange(of: searchedText) {
-                    filterProfiles()
-                }
-                
-                
-                if let chat = selectedChat {
-                    NavigationLink(destination: ChatView(chatViewModel: ChatViewModel(chatID: chat.id), receiverViewModel: uv)) {
-                        EmptyView()
+                    .searchable(text: $searchedText, prompt: "Search for people...")
+                    .onChange(of: searchedText) {
+                        filterProfiles()
                     }
                 }
             }
+            .task {
+                profiles = await userViewModel.getAll(authUser: provider.user)
+                filterProfiles()
+            }
+            .navigationTitle("Start Chatting")
+            .navigationBarTitleDisplayMode(.inline)
+
+            // TODO: Fix it infinite loop
+            .navigationDestination(for: String.self) { profileID in
+                if let profile = filteredProfiles.first(where: { $0.id == profileID }),
+                   let chat = selectedChat {
+                    LazyChatView(
+                        authUser: provider.user,
+                        receiverID: profile.id,
+                        chatID: chat.chatID)
+                } else {
+                    EmptyView()
+                }
+            }
         }
-        .navigationTitle("Start Chatting")
-        .navigationBarTitleDisplayMode(.inline)
     }
     
     private func filterProfiles() {
@@ -85,17 +101,22 @@ struct SearchForPplView: View {
     }
     
     private func createOrSelectChat(with profile: User) {
-        let participants = [
-            provider.user.id: Author(user: provider.user),
-            profile.id: Author(user: profile)
-        ]
+        var chats: [ChatData] = []
         
-        ChatViewModel().findOrCreateChat(participants: participants) { chat in
-            if let chat = chat {
-                selectedChat = chat
+
+        Task {
+            self.choosenOne = profile
+            chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats)
+            for chat in chats{
+                print(chat.participants)
+            }
+
+            if let selectedChat = chats.first(where: { $0.participants[profile.id] != nil }) {
+                self.selectedChat = selectedChat
+            } else {
+                await chatViewModel.createNewChat(sender: provider.user, receiver: profile)
+                await provider.refreshUser(provider.user)
             }
         }
     }
 }
-
-

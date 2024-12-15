@@ -42,10 +42,10 @@ struct ForgotPasswordView: View {
                         .disableAutocorrection(true)
                     }
                     .padding()
-                    
-                    ButtonWithIcon(color: .accentColor, text: Text("Send an e-mail"), icon: "arrow.clockwise.circle") {
-                        showPinField.toggle()
-                    }
+//                    
+//                    ButtonWithIcon(color: .accentColor, text: Text("Send an e-mail"), icon: "arrow.clockwise.circle") {
+//                        showPinField.toggle()
+//                    }
                 }
                 .sheet(isPresented: $showPinField) {
                     PinCodeView()
@@ -93,10 +93,10 @@ struct PinCodeView: View {
                     .autocorrectionDisabled()
                     .keyboardType(.alphabet)
                 
-                ButtonWithIcon(color: .accentColor, text: Text("Change"), icon: "arrow.triangle.2.circlepath"){
-                    
-                }
-                .padding(.vertical)
+//                ButtonWithIcon(color: .accentColor, text: Text("Change"), icon: "arrow.triangle.2.circlepath",){
+//                    
+//                }
+//                .padding(.vertical)
                 
             }.padding()
         } else {
@@ -109,8 +109,4 @@ struct PinCodeView: View {
         showNewPasswordField.toggle()
     }
     
-}
-
-#Preview {
-    ForgotPasswordView().environmentObject(AuthViewModel())
 }

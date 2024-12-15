@@ -9,9 +9,10 @@ import SwiftUI
 
 struct GameRow: View {
     var gameViewModel: GameViewModel
+    @ObservedObject var userViewModel: UserViewModel
     
     var body: some View {
-        NavigationLink(destination: GameView(gameViewModel: gameViewModel)) {
+        NavigationLink(destination: LazyGameView(gameID: gameViewModel.game.id, userViewModel: userViewModel)) {
             VStack {
                 HStack(spacing: 20) {
                     ZStack(alignment: .topLeading) {

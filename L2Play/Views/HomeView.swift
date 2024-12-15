@@ -15,43 +15,46 @@ struct HomeView: View {
     @StateObject var postViewModel: PostViewModel
     @State private var recommendations: [Item] = []
     
-    @State private var triedToFetch: Bool = false
     
     var body: some View {
-        Group{
-            if posts.isEmpty && !triedToFetch {
-                LoadingView().task {
-                    await loadPosts()
-                    triedToFetch.toggle()
-                }
-            } else {
-                NavigationStack {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            welcome
-                            
-                            postSection
-                        }.padding(.horizontal, 10)
-                    }
-                    .padding(.horizontal, 5)
-                    .navigationTitle("Welcome, \(provider.user.firstName ?? "")!")
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(action: { postcreator.toggle() }) {
-                                Image(systemName: "square.and.pencil")
-                                    .imageScale(.large)
+        NavigationStack {
+            Group {
+                if postViewModel.isLoading || provider.isLoading {
+                    LoadingView()
+                } else {
+                    main
+                        .navigationTitle("welcoming".localized(with: provider.user.fullName()))
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button(action: { postcreator.toggle() }) {
+                                    Image(systemName: "square.and.pencil")
+                                        .imageScale(.large)
+                                }
                             }
                         }
-                    }
-                    .sheet(isPresented: $postcreator) {
-                        PostForm(postViewModel: postViewModel, posts: $posts, postcreator: $postcreator)
-                    }
+                        .sheet(isPresented: $postcreator) {
+                            PostForm(postViewModel: postViewModel, posts: $posts, postcreator: $postcreator)
+                        }
                 }
-                .refreshable {
-                    await loadPosts()
-                }
+            }.task {
+                await loadPosts()
             }
         }
+        .refreshable {
+            await loadPosts()
+        }
+    }
+    
+    
+    private var main: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                welcome
+                
+                postSection
+            }.padding(.horizontal, 10)
+        }
+        .padding(.horizontal, 5)
     }
     
     private func loadPosts() async {
@@ -146,7 +149,7 @@ struct PostForm: View {
                 .foregroundStyle(.gray)
             
             TextEditor(text: $content)
-                .padding(4)
+                .padding(16)
                 .frame(height: 150)
                 .font(.body)
                 .background(Color(.systemGray6))
@@ -509,12 +512,12 @@ private struct reactionBar: View {
             await postViewModel.postReact(post)
         }
         
-        DispatchQueue.main.async {
+//        DispatchQueue.main.async {
             if provider.errorMessage == nil {
                 HapticManager.shared.generateSuccessFeedback()
             } else {
                 HapticManager.shared.generateErrorFeedback()
             }
-        }
+//        }
     }
 }

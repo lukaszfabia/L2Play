@@ -13,8 +13,8 @@ struct OldReview: Codable, Identifiable {
     let review: String
     let rating: Int
     
-    init(id: UUID = UUID(), createdAt: Date, review: String, rating: Int) {
-        self.id = id
+    init(createdAt: Date, review: String, rating: Int) {
+        self.id = .init()
         self.createdAt = createdAt
         self.review = review
         self.rating = rating
@@ -91,4 +91,10 @@ class Review: Codable, Identifiable {
     func isDisliked(by userID: String) -> Bool {
         return dislikes.contains(userID)
     }
+    
+    func updateAuthor(_ newAuthor: Author) -> Review {
+        self.author = newAuthor
+        return self
+    }
+    
 }

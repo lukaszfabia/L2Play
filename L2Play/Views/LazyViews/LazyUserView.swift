@@ -10,18 +10,20 @@ import SwiftUI
 
 struct LazyUserView: View {
     let userID: String
+    
+    // you can provide clean object
     @ObservedObject var userViewModel: UserViewModel
-
+    
+    
     var body: some View {
         Group {
-            if let user = userViewModel.user {
-                UserView(user: user)
+            if userViewModel.isLoading {
+                LoadingView()
             } else {
-                ProgressView("Loading user")
-                    .task {
-                        await userViewModel.fetchUser(with: userID)
-                    }
+                UserView(user: userViewModel.user)
             }
+        }.task {
+            await userViewModel.fetchUser(with: userID)
         }
     }
 }

@@ -5,6 +5,8 @@
 //  Created by Lukasz Fabia on 26/11/2024.
 //
 
+import Foundation
+
 extension String {
     
     /// Takes first word from sentence
@@ -16,5 +18,9 @@ extension String {
         }
         
         return String(res)
+    }
+    
+    func localized(with arguments: CVarArg...) -> String {
+        return String(format: NSLocalizedString(self, comment: ""), arguments: arguments)
     }
 }

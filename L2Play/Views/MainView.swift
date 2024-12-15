@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MainView: View {
-    @EnvironmentObject var provider: AuthViewModel
+    @EnvironmentObject private var provider: AuthViewModel
     @State private var presentSideMenu = false
     @State private var selectedSideMenuTab = 0
     

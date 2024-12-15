@@ -36,33 +36,36 @@ private struct ListUsersView<ButtonRow: View>: View {
     
     var body: some View {
         NavigationStack {
-            if users.isEmpty && !userViewModel.isLoading {
-                LoadingView().task {
-                    users = await userViewModel.getAllWithIds(ids)
-                }
-            } else if users.isEmpty {
-                VStack {
-                    Text("There is nothing to show here.")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    
-                    Text("Check back later or try refreshing the page.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-            } else {
-                List(searchResults, id: \.id) { user in
-                    if currentUserID != user.id {
-                        UserRow(user: user, button: button)
-                    } else {
-                        UserRow(user: user) { _ in EmptyView()}
+            Group {
+                if userViewModel.isLoading {
+                    LoadingView()
+                } else if users.isEmpty {
+                    VStack {
+                        Text("There is nothing to show here.")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                        
+                        Text("Check back later or try refreshing the page.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                     }
+                } else {
+                    List(searchResults, id: \.id) { user in
+                        if currentUserID != user.id {
+                            UserRow(user: user, button: button)
+                        } else {
+                            UserRow(user: user) { _ in EmptyView()}
+                        }
+                    }
+                    .searchable(text: $searchText)
                 }
-                .searchable(text: $searchText)
+            }
+            .task {
+                users = await userViewModel.getAllWithIds(ids)
             }
         }
         .navigationTitle(navigationBarTitle.rawValue)
@@ -88,8 +91,7 @@ struct BlockedPeopleView: View {
         ListUsersView(navigationBarTitle: .blocked, ids: provider.user.blockedUsers) { user in
             Button(role: .destructive) {
                 Task {
-                    var u = user
-                    await provider.toogleBlockUser(&u)
+                    await provider.toogleBlockUser(user)
                 }
             } label: {
                 Text("Unblock")

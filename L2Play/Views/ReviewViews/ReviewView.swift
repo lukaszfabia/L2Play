@@ -11,12 +11,12 @@ let RATING_RANGE: Int = 5
 struct ReactionBar: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
     @ObservedObject var userViewModel: UserViewModel
+    @ObservedObject var gameViewModel: GameViewModel
     
-    var refreshGame: () async -> Void
     
     var body: some View {
         HStack{
-            NavigationLink(destination: ReviewViewDetails(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame), label: {
+            NavigationLink(destination: ReviewViewDetails(reviewViewModel: reviewViewModel, userViewModel: userViewModel, gameViewModel: gameViewModel), label: {
                 Image(systemName: "message")
                 Text("\(reviewViewModel.commentsCount.shorterNumber())")
             }).buttonStyle(PlainButtonStyle())
@@ -50,11 +50,12 @@ struct ReactionBar: View {
 
 struct MenuWithActions: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
+    @ObservedObject var gameViewModel: GameViewModel
     
     @State private var selectedReason: ReportReason? = nil
     @State private var isPresented: Bool = false
     
-    var reload: () async -> Void
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         Menu {
@@ -62,7 +63,9 @@ struct MenuWithActions: View {
                 Button(role: .destructive, action: {
                     reviewViewModel.deleteReview()
                     Task {
-                        await reload()
+                        await gameViewModel.updateGameRating()
+                        dismiss() // back to previous view
+                        await gameViewModel.refreshGame()
                     }
                 }) {
                     Label("Delete", systemImage: "trash")
@@ -121,7 +124,7 @@ struct MenuWithActions: View {
                     .padding(.horizontal)
                 }
                 .disabled(selectedReason == nil)
-
+                
             }
             .padding()
         }
@@ -175,7 +178,8 @@ struct AddCommentView: View {
 
 func oldReviewsView(for oldReviews: [OldReview]) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-        ForEach(oldReviews.reversed(), id: \.id) { old in
+        ForEach(Array(oldReviews.reversed()).indices, id: \.self) { index in
+            let old = oldReviews.reversed()[index]
             HStack(spacing: 15) {
                 VStack {
                     Circle()
@@ -214,13 +218,25 @@ func oldReviewsView(for oldReviews: [OldReview]) -> some View {
 struct ReviewViewDetails: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
     @ObservedObject var userViewModel: UserViewModel
-    
-    var refreshGame: () async -> Void
+    @ObservedObject var gameViewModel: GameViewModel
     
     var body: some View {
+        Group {
+            if reviewViewModel.isLoading || userViewModel.isLoading {
+                LoadingView()
+            } else {
+                detailedView
+            }
+        }.task {
+            await reviewViewModel.fetchComments()
+            await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
+        }
+    }
+    
+    private var detailedView: some View {
         VStack {
             ScrollView {
-                ReviewRow(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame, isDetail: true)
+                ReviewRow(reviewViewModel: reviewViewModel, userViewModel: userViewModel, gameViewModel: gameViewModel, isDetail: true)
                 
                 if let u = userViewModel.user, !u.hasBlocked(reviewViewModel.user.id){
                     AddCommentView(reviewViewModel: reviewViewModel)
@@ -235,30 +251,18 @@ struct ReviewViewDetails: View {
         .padding()
         .navigationTitle("Review Details")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            Task {
-                await reviewViewModel.fetchComments()
-                await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
-            }
-        }
-        .onDisappear {
-            Task {
-                await reviewViewModel.fetchComments()
-            }
-        }
     }
 }
 
 struct CommentRow: View {
     let comment: Comment
-    @StateObject private var userViewModel: UserViewModel = UserViewModel()
     
     var body: some View {
         HStack(spacing: 6) {
             UserImage(pic: comment.author.profilePicture, w: 40, h: 40)
             
             VStack(alignment: .leading) {
-                NavigationLink(destination: UserView(user: userViewModel.user), label: {
+                NavigationLink(destination: LazyUserView(userID: comment.author.id, userViewModel: UserViewModel()), label: {
                     Text(comment.author.name)
                         .font(.headline)
                         .foregroundStyle(.primary)
@@ -274,10 +278,6 @@ struct CommentRow: View {
             .padding()
             
             Spacer()
-        }.onAppear() {
-            Task {
-                await userViewModel.fetchUser(with: comment.author.id)
-            }
         }
     }
 }
@@ -286,8 +286,7 @@ struct CommentRow: View {
 struct ReviewRow: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
     @ObservedObject var userViewModel: UserViewModel // author
-    
-    var refreshGame: () async -> Void
+    @ObservedObject var gameViewModel: GameViewModel // author
     
     var isDetail: Bool = false
     
@@ -320,7 +319,7 @@ struct ReviewRow: View {
             
             // disable reaction bar when author has blocked current user
             if let u = userViewModel.user, !u.hasBlocked(reviewViewModel.user.id) {
-                MenuWithActions(reviewViewModel: reviewViewModel, reload: refreshGame)
+                MenuWithActions(reviewViewModel: reviewViewModel, gameViewModel: gameViewModel)
             }
         }
     }
@@ -340,7 +339,7 @@ struct ReviewRow: View {
             
             if !reviewViewModel.review.review.isEmpty {
                 if !isDetail {
-                    NavigationLink(destination: ReviewViewDetails(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame)) {
+                    NavigationLink(destination: ReviewViewDetails(reviewViewModel: reviewViewModel, userViewModel: userViewModel, gameViewModel: gameViewModel)) {
                         Text(reviewViewModel.review.review)
                             .padding(.top, 2)
                     }.buttonStyle(PlainButtonStyle())
@@ -359,7 +358,7 @@ struct ReviewRow: View {
                     .padding(.vertical, 5)
                 
                 HStack(spacing: 6) {
-                    ReactionBar(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame)
+                    ReactionBar(reviewViewModel: reviewViewModel, userViewModel: userViewModel, gameViewModel: gameViewModel)
                 }
                 .padding(.horizontal, 5)
                 .padding(.vertical, 20)
@@ -369,27 +368,25 @@ struct ReviewRow: View {
 }
 
 struct ReviewView: View {
-    @StateObject var reviewViewModel: ReviewViewModel // we have curr-user/review/game
+    @ObservedObject var reviewViewModel: ReviewViewModel // we have curr-user/review/game
     @StateObject private var userViewModel: UserViewModel = UserViewModel()
+    @ObservedObject var gameViewModel: GameViewModel
     
-    var refreshGame: () async -> Void
-    
-    init(reviewViewModel: ReviewViewModel, refreshGame: @escaping () async -> Void) {
-        self._reviewViewModel = StateObject(wrappedValue: reviewViewModel)
-        self.refreshGame = refreshGame
-    }
     
     var body: some View {
-        ReviewRow(reviewViewModel: reviewViewModel, userViewModel: userViewModel, refreshGame: refreshGame)
-            .onAppear(){
-                Task {
-                    await reviewViewModel.fetchComments()
-                    await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
-                }
+        Group {
+            if userViewModel.isLoading || reviewViewModel.isLoading {
+                LoadingView()
+            } else {
+                ReviewRow(reviewViewModel: reviewViewModel, userViewModel: userViewModel, gameViewModel: gameViewModel)
+                    .padding(5)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(20)
+                    .shadow(radius: 20)
             }
-            .padding(5)
-            .background(Color(.systemGray6))
-            .cornerRadius(20)
-            .shadow(radius: 20)
+        }.task  {
+            await reviewViewModel.fetchComments()
+            await userViewModel.fetchUser(with: reviewViewModel.review.author.id)
+        }
     }
 }

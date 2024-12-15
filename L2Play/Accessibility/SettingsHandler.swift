@@ -38,13 +38,12 @@ class SettingsHandler: ObservableObject {
     
     
     init() {
-        let systemDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
-        isDarkMode = systemDarkMode
-        
-        let systemLanguage = Locale.preferredLanguages.first ?? "en"
-        language = Language(rawValue: systemLanguage) ?? .english
-        
-    }
+         let systemDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+         isDarkMode = isDarkModeRaw ?? systemDarkMode
+
+         let systemLanguage = languageRaw?.rawValue ?? Locale.preferredLanguages.first ?? "en"
+         language = Language(rawValue: systemLanguage) ?? .english
+     }
     
     func currentTheme() -> ColorScheme {
         return isDarkMode ? .dark : .light

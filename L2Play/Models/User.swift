@@ -24,12 +24,12 @@ class User: Codable, Identifiable, Hashable {
     
     // MARK: - Hashable & Equatable
     static func ==(lhs: User, rhs: User) -> Bool {
-         return lhs.id == rhs.id
-     }
-
-     func hash(into hasher: inout Hasher) {
-         hasher.combine(id)
-     }
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
     
     // MARK: - Helper Methods
     func hasBlocked(_ userID: String) -> Bool {
@@ -67,20 +67,17 @@ class User: Codable, Identifiable, Hashable {
             .map{[$0.key : $0.value]}
     }
     
-    func computeFavoriteTags(games: [Game]) -> [[String: Int]] {
-        return games.map { game in
-            game.tags.reduce(into: [:]) { counts, tag in
+    func computeFavoriteTags(games: [Game]) -> [String: Int] {
+        return games.flatMap { $0.tags }
+            .reduce(into: [:]) { counts, tag in
                 counts[tag, default: 0] += 1
             }
-        }
     }
-
-
     
     func splitByState() -> [GameState: [GameWithState]] {
         return Dictionary(grouping: games, by: { $0.state })
     }
-
+    
     
     func toggleFollowStatus(_ otherUser: inout User) {
         guard self != otherUser else { return }
@@ -128,6 +125,11 @@ class User: Codable, Identifiable, Hashable {
         } else {
             return .notPlayed
         }
+    }
+    
+    func addNewChat(chatID: String) -> User {
+        chats.append(chatID)
+        return self
     }
     
     // MARK: - Initializers

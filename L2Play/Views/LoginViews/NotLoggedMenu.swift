@@ -21,6 +21,7 @@ struct navigationStack: View {
                 
                 VStack(spacing: 30) {
                     Button(action: {
+                        HapticManager.shared.generateHapticFeedback(style: .light)
                         provider.continueWithGoogle(presenting: getRootViewController())
                     }) {
                         HStack {
@@ -78,7 +79,8 @@ struct navigationStack: View {
 
 struct NotLoggedMenu: View {
     private let prompts = [
-        NSLocalizedString("PromptsForNotLoggedMenu_0", comment: ""),  NSLocalizedString("PromptsForNotLoggedMenu_1", comment: ""),
+        NSLocalizedString("PromptsForNotLoggedMenu_0", comment: ""),
+        NSLocalizedString("PromptsForNotLoggedMenu_1", comment: ""),
         NSLocalizedString("PromptsForNotLoggedMenu_2", comment: ""),
     ]
     

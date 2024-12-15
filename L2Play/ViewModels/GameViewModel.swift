@@ -189,7 +189,7 @@ class GameViewModel: ObservableObject, AsyncOperationHandler {
         return inverse ? 1 - normalizedValue : normalizedValue
     }
     
-    private func updateGameRating() async {
+    func updateGameRating() async {
         guard !reviews.isEmpty else { return }
         
         var totalWeightedRating: Double = 0.0

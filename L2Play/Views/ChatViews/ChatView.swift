@@ -8,55 +8,15 @@
 import SwiftUI
 
 struct ChatView: View {
-    @EnvironmentObject private var provider: AuthViewModel
     @ObservedObject var chatViewModel: ChatViewModel
-    @ObservedObject var receiverViewModel: UserViewModel
     @State private var messageText: String = ""
-    
-    private func getAuthor(for message: Message, in chat: Chat) -> Author? {
-        return chat.participants[message.senderID]
-    }
     
     var body: some View {
         VStack {
-            if chatViewModel.chat == nil && !chatViewModel.isLoading {
-                LoadingView().task {
-                    chatViewModel.observeChatMessages()
-                }
-            } else {
-                ScrollViewReader { scrollView in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 8) {
-                            if let chat = chatViewModel.chat {
-                                ForEach(chat.messages, id: \.uid) { message in
-                                    if let author = getAuthor(for: message, in: chat) {
-                                        MessageBubble(
-                                            message: message,
-                                            isCurrentUser: message.isMe(provider.user.id),
-                                            author: author
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                    }
-                    .onChange(of: chatViewModel.chat?.messages.count) {
-                        if let lastMessageId = chatViewModel.chat?.messages.last?.id {
-                            DispatchQueue.main.async {
-                                scrollView.scrollTo(lastMessageId, anchor: .bottom)
-                            }
-                        }
-                    }
-                }
-            }
-            
+            chatHistory
             chatInputBar
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
         }
-        .navigationTitle(receiverViewModel.user?.fullName() ?? "Chat")
+        .navigationTitle(chatViewModel.receiver?.fullName() ?? "Chat")
         .navigationBarTitleDisplayMode(.inline)
         .alert(isPresented: .constant(chatViewModel.errorMessage != nil)) {
             Alert(
@@ -66,6 +26,24 @@ struct ChatView: View {
             )
         }
     }
+    
+    private var chatHistory: some View {
+        ScrollViewReader { scrollView in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(chatViewModel.messages.sorted{$0.timestamp < $1.timestamp}) { message in
+                        MessageBubble(message: message, chat: chatViewModel.chat!)
+                    }
+                }
+            }
+            .onChange(of: chatViewModel.messages) {
+                DispatchQueue.main.async {
+                    scrollView.scrollTo(chatViewModel.messages.last?.id, anchor: .bottom)
+                }
+            }
+        }
+    }
+    
     
     private var chatInputBar: some View {
         HStack {
@@ -83,10 +61,17 @@ struct ChatView: View {
             }
             .disabled(messageText.isEmpty)
         }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
     }
     
     private func sendMessage() {
-        chatViewModel.sendMessage(text: messageText, senderID: provider.user.id)
-        messageText = ""
+        Task {
+            await chatViewModel.sendMessage(text: messageText)
+            chatViewModel.errorMessage == nil ?
+            HapticManager.shared.generateSuccessFeedback() : HapticManager.shared.generateErrorFeedback()
+            messageText = ""
+        }
     }
 }

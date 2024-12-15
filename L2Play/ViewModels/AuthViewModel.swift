@@ -120,6 +120,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     
     func login(email: String, password: String) {
         self.isLoading = true
+        defer {self.isLoading = false}
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
             if let err = error {
                 self.handleAuthError(message: "Failed to authenticate user.", error: err)
@@ -138,6 +139,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     
     func signUp(email: String, password: String, firstName: String, lastName: String) {
         self.isLoading = true
+        defer { self.isLoading = false }
+        
         let av = AuthValidator(firstName: firstName, lastName: lastName, email: email, password: password)
         
         guard av.validateSignUp() else {
@@ -283,7 +286,7 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         try await self.manager.update(collection: .users, id: self.user.id, object: self.user)
     }
     
-    func toogleBlockUser(_ otherUser: inout User) async {
+    func toogleBlockUser(_ otherUser: User) async {
         var copy = otherUser
         
         // we have blocked so update other user state
@@ -437,6 +440,18 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         }
         
         return (try? rec.get().map { Item($0) }) ?? []
+    }
+    
+    func fetchReviews() async -> [Review] {
+        self.isLoading = true
+        defer {
+            self.isLoading = false
+        }
+        let r: Result<[Review], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .reviews, whereIs: ("author.id", user.id))
+        }
+        
+        return (try? r.get()) ?? []
     }
     
 }

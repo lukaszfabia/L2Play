@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct UserView: View {
     @EnvironmentObject private var provider: AuthViewModel // for me
     @StateObject private var userViewModel: UserViewModel
@@ -14,11 +15,18 @@ struct UserView: View {
     @State private var favs: [Item] = []
     @State private var reviews: [Review] = []
     
-    @State private var selectedTab = 0
     @State private var isSettingsPresented = false
-    @State private var showErrorAlert = false
     
-    @State private var triedToFetch: Bool = false
+    @State private var stateData: [GameData<GameState>] = []
+    @State private var tagsData: [GameData<String>] = []
+    
+    @State private var collection: [Collection] = []
+    @State private var planned: [GameWithState] = []
+    @State private var playing: [GameWithState] = []
+    @State private var completed: [GameWithState] = []
+    @State private var dropped: [GameWithState] = []
+    
+    
     
     init(user: User?) {
         self._userViewModel = StateObject(wrappedValue: UserViewModel(user: user))
@@ -34,107 +42,125 @@ struct UserView: View {
     
     var body: some View {
         NavigationStack {
-            if reviews.isEmpty && !triedToFetch {
-                LoadingView().task {
-                    await loadData()
-                }
-            } else if let err = userViewModel.errorMessage {
-                Text(err)
-            } else {
-                ScrollView(.vertical) {
-                    VStack {
-                        ProfileHeaderView(user: currentUser, actionSection: actionButtons)
-                        
-                        CustomDivider()
-                        
-                        if isReadOnly {
-                            if currentUser.hasBlocked(provider.user.id) {
-                                youreBlocked()
-                            } else if provider.user.hasBlocked(currentUser.id) {
-                                youBlockedUser()
-                            }
-                        }
-                        
-                        
-                        Picker(selection: $selectedTab, label: Text("Menu")) {
-                            Text("Favourites").tag(0)
-                            Text("Playlist").tag(1)
-                            if !isReadOnly {
-                                Text("My Reviews").tag(2)
-                            }
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .padding()
-                        
-                        switch selectedTab {
-                        case 0:
-                            FavoritesView(favs: $favs, userViewModel: UserViewModel(user: provider.user))
-                        case 1:
-                            PlaylistView(userViewModel: UserViewModel(user: provider.user))
-                        case 2:
-                            if !isReadOnly {
-                                MyReviewsView(reviews: $reviews)
-                            }
-                        default:
-                            EmptyView()
-                        }
-                    }
-                    .padding()
-                    .navigationTitle("Profile")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        if !isReadOnly {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button(action: { isSettingsPresented.toggle() }) {
-                                    Image(systemName: "gear")
-                                        .resizable()
-                                        .frame(width: 32, height: 32)
-                                }
-                            }
-                        } else {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Menu {
-                                    Button(action: {
-                                        // init new or take existing chat
-                                    }) {
-                                        Label("Send Message", systemImage: "paperplane.fill")
-                                    }
-                                    
-                                    Button(role: .destructive, action: {
-                                        Task {
-                                            var u = currentUser
-                                            await provider.toogleBlockUser(&u)
-                                            
-                                            if provider.errorMessage != nil {
-                                                HapticManager.shared.generateErrorFeedback()
-                                            } else {
-                                                HapticManager.shared.generateSuccessFeedback()
-                                            }
-                                        }
-                                    }) {
-                                        Label(provider.user.hasBlocked(currentUser.id) ? "Unblock" : "Block \(currentUser.firstName ?? "User")", systemImage: "hand.raised.fill")
-                                            .foregroundColor(.red)
-                                    }
-                                } label: {
-                                    Image(systemName: "ellipsis.circle")
-                                        .font(.title3)
-                                        .foregroundColor(.primary)
-                                }
-                                
-                            }
-                        }
-                    }
-                    .sheet(isPresented: $isSettingsPresented) {
-                        SettingsView(isSettingsPresented: $isSettingsPresented)
-                    }
-                    .alert(isPresented: $showErrorAlert) {
-                        Alert(title: Text("Error"), message: Text(userViewModel.errorMessage ?? "An unknown error occurred"), dismissButton: .default(Text("OK")))
-                    }
+            Group {
+                if userViewModel.isLoading {
+                    LoadingView()
+                } else {
+                    profile
                 }
             }
+            .task {
+                guard !userViewModel.isLoading else { return }
+                await loadData()
+            }
         }
-        .refreshable {
-            await loadData()
+    }
+    
+    private var profile: some View {
+        TabView {
+            main
+            StatsView(stateData: stateData, tagsData: tagsData, currentUser: currentUser)
+            PlaylistView(userViewModel: userViewModel, collection: collection)
+            ReviewsView(reviews: $reviews)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .always))
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isSettingsPresented) {
+            SettingsView(isSettingsPresented: $isSettingsPresented)
+        }
+        .toolbar {
+            if !isReadOnly {
+                authUserMenu
+            } else {
+                readonlyUserMenu
+            }
+        }
+    }
+    
+    private var main: some View {
+        ScrollView {
+            VStack(alignment: .leading) {
+                ProfileHeaderView(user: currentUser, actionSection: actionButtons)
+                
+                if isReadOnly {
+                    if currentUser.hasBlocked(provider.user.id) {
+                        youreBlocked()
+                    } else if provider.user.hasBlocked(currentUser.id) {
+                        youBlockedUser()
+                    }
+                }
+                
+                
+                if favs.isEmpty {
+                    Text("No favourites yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    
+                    HStack {
+                        Text("Favourites")
+                            .fontWeight(.light)
+                            .multilineTextAlignment(.leading)
+                        
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.accent)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .font(.largeTitle)
+                    
+                    CustomPageSlider(data: $favs) { $item in
+                        NavigationLink(destination: LazyGameView(gameID: item.game.gameID, userViewModel: userViewModel)) {
+                            FavoriteGamesRow(game: item.game)
+                        }
+                    } titleContent: { _ in }
+                        .safeAreaPadding([.horizontal, .vertical], 10)
+                }
+            }
+            .padding()
+            .navigationTitle("Profile")
+        }
+    }
+    
+    
+    private var authUserMenu: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(action: { isSettingsPresented.toggle() }) {
+                Image(systemName: "gear")
+                    .resizable()
+                    .frame(width: 32, height: 32)
+            }
+        }
+    }
+    
+    private var readonlyUserMenu: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Menu {
+                Button(action: {
+                    // init new or take existing chat
+                }) {
+                    Label("Send Message", systemImage: "paperplane.fill")
+                }
+                
+                Button(role: .destructive, action: handleBlockUser) {
+                    Label(provider.user.hasBlocked(currentUser.id) ? "Unblock" : "Block \(currentUser.firstName ?? "User")", systemImage: "hand.raised.fill")
+                        .foregroundColor(.red)
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+            }
+        }
+    }
+    
+    private func handleBlockUser() {
+        Task {
+            await provider.toogleBlockUser(currentUser)
+            
+            if provider.errorMessage != nil {
+                HapticManager.shared.generateErrorFeedback()
+            } else {
+                HapticManager.shared.generateSuccessFeedback()
+            }
         }
     }
     
@@ -215,21 +241,32 @@ struct UserView: View {
         }
     }
     
+    
     private func loadData() async {
-        guard !userViewModel.isLoading else { return }
+        guard !currentUser.games.isEmpty else {return}
         
-        triedToFetch = true 
+        self.reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
+        let games = await userViewModel.fetchGames(ids: currentUser.games.map { $0.gameID })
         
-        await userViewModel.refreshUser()
-        reviews = await userViewModel.fetchReviewsForUser(user: currentUser)
+        stateData = GameData<GameState>.toList(lst: currentUser.computeGameStateAndCard())
+        tagsData = GameData<String>.toList(lst: currentUser.computeFavoriteTags(games: games), max: 4)
         
-        DispatchQueue.main.async {
-            // split games by state
-            let dict = currentUser.splitByState()
+        if let dict = userViewModel.user?.splitByState() {
+            self.planned = dict[.planned] ?? []
+            self.playing = dict[.playing] ?? []
+            self.completed = dict[.completed] ?? []
+            self.dropped = dict[.dropped] ?? []
+            self.favs = dict[.favorite]?.map { game in Item(game: game) } ?? []
             
-            favs = dict[GameState.favorite]?.map { game in
-                Item(game: game)
-            } ?? []
+            self.collection = [
+                Collection(games: self.planned, title: "Upcoming Adventures", subtitle: "Games you're excited to start.", state: .planned),
+                Collection(games: self.playing, title: "Current Quests", subtitle: "Games you're immersed in right now.", state: .playing),
+                Collection(games: self.completed, title: "Victorious Journeys", subtitle: "Games you've conquered.", state: .completed),
+                Collection(games: self.dropped, title: "Paused Dreams", subtitle: "Games you've set aside for now.", state: .dropped)
+            ]
         }
     }
+    
 }
+
+

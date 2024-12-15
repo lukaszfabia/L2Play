@@ -46,6 +46,11 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     
     
     func fetchUser(with id: String?) async {
+        self.isLoading = true
+        defer {
+            self.isLoading = false
+        }
+        
         guard let id else {return}
         
         let result: Result<User, Error> = await performAsyncOperation {
@@ -58,7 +63,7 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
         
     }
     
-    // Get users with provided ids
+    // get users with provided ids
     func getAllWithIds(_ ids: [String]) async -> [User] {
         self.isLoading = true
         defer {
@@ -78,6 +83,10 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     
     // use it on explore view
     func fetchGames(ids: [UUID] = []) async -> [Game] {
+        self.isLoading = true
+        defer {
+            self.isLoading = false
+        }
         let result: Result<[Game], Error> = await performAsyncOperation {
             if ids.isEmpty {
                 try await self.manager.findAll(collection: .games)
@@ -105,5 +114,13 @@ class UserViewModel: ObservableObject, AsyncOperationHandler {
     func getReceiverID(for chat: Chat?, currentUserID: String?) -> String? {
         guard let currentUserID, let chat else { return nil }
         return chat.participants.keys.first { $0 != currentUserID }
+    }
+    
+    func getAll(authUser: User) async -> [User] {
+        let r: Result<[User], Error> = await performAsyncOperation { [self] in
+            try await manager.findAll(collection: .users)
+        }
+        
+        return (try? r.get().filter{$0 != authUser}) ?? []
     }
 }

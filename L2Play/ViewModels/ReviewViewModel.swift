@@ -78,16 +78,14 @@ class ReviewViewModel: ObservableObject, AsyncOperationHandler {
     
 
     func fetchComments() async {
+        self.isLoading = true
+        defer {self.isLoading = false}
         let result: Result<[Comment], Error> = await performAsyncOperation {
             try await self.manager.findAll(collection: .comments, whereIs: ("reviewID", self.review.id.uuidString))
         }
         
-        switch result {
-        case .success(let fetchedComments):
-            self.comments = fetchedComments
-            break
-        case .failure:
-            break
+        if case .success(let success) = result {
+            self.comments = success
         }
     }
     

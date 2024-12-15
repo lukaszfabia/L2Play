@@ -9,77 +9,59 @@ import SwiftUI
 
 
 struct RegisterView: View {
+    @EnvironmentObject var provider: AuthViewModel
     @State private var firstName: String = ""
     @State private var lastName : String = ""
     @State private var password: String = ""
     @State private var email : String = ""
     
-    
-    @EnvironmentObject var provider: AuthViewModel
-    
-    private let signupwtih0 = NSLocalizedString("SignUpWith0", comment: "")
-    private let signupwtih1 = NSLocalizedString("SignUpWith1", comment: "")
-    
-    private let summary = NSLocalizedString("ValidPassword0", comment: "")
+    @State private var isSubmitting : Bool = false
+    @State private var isAuth : Bool = false
     
     private let details: [String] = [
-        NSLocalizedString("ValidPassword1", comment: ""),
-        NSLocalizedString("ValidPassword2", comment: ""),
-        NSLocalizedString("ValidPassword3", comment: ""),
-        NSLocalizedString("ValidPassword4", comment: "")
+        "At least 1 Big letter",
+        "At least 1 Digit",
+        "Mininum 6 characters",
+        "At least 1 Special Sign",
     ]
     
-    
-    private let note = NSLocalizedString("NoteSignUp", comment: "")
-    
-    private let prompt = NSLocalizedString("RegisterPrompt", comment: "")
-    
-    private let firstName_ = NSLocalizedString("First name", comment: "")
-    private let lastName_ = NSLocalizedString("Last name", comment: "")
-    private let password_ = NSLocalizedString("Password", comment: "")
+    var isFormValid: Bool {
+        !firstName.isEmpty && !lastName.isEmpty && !email.isEmpty && !password.isEmpty && !provider.isLoading
+    }
     
     var body: some View {
         NavigationStack {
             ScrollView{
                 VStack(alignment: .center, spacing: 6) {
                     VStack {
-                        Text(prompt)
-                            .foregroundStyle(.gray)
-                    }.padding()
-                    
-                    VStack{
                         GoogleButton{
                             provider.continueWithGoogle(presenting: getRootViewController())
                         }
                         
                         CustomDivider(text: Text("or")).padding()
                         
-                        Text(signupwtih0 + " ")
-                            .font(.title2)
-                            .fontWeight(.light)
-                        +
-                        Text(signupwtih1)
-                            .bold()
-                            .font(.title2)
+                        
+                        Text("Get Started with Email")
+                            .font(.title2.bold())
                     }.padding()
                     
                     
                     VStack {
                         Section {
-                            CustomFieldWithIcon(acc: $firstName, placeholder: firstName_, icon: "person", isSecure: false)
+                            CustomFieldWithIcon(acc: $firstName, placeholder: "Joe", icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
                             
-                            CustomFieldWithIcon(acc: $lastName, placeholder: lastName_, icon: "person", isSecure: false)
+                            CustomFieldWithIcon(acc: $lastName, placeholder: "Doe", icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
                             
-                            CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
+                            CustomFieldWithIcon(acc: $email, placeholder: "joe.doe@example.com", icon: "envelope", isSecure: false)
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                             
-                            CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
+                            CustomFieldWithIcon(acc: $password, placeholder: "", icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
@@ -87,7 +69,7 @@ struct RegisterView: View {
                         .padding(.vertical, 10)
                         .padding(.horizontal, 10)
                         
-                        AccordionView(summary: summary, details: details)
+                        AccordionView(summary: "How to make valid password?", details: details)
                         
                         HStack {
                             NavigationLink(destination: LoginView()) {
@@ -103,30 +85,44 @@ struct RegisterView: View {
                     .cornerRadius(20)
                     
                     
-                    VStack{
-                        ButtonWithIcon(color: .accentColor, text: Text("Sign up"), icon: "arrow.right"){
-                            provider.signUp(email: email, password: password, firstName: firstName, lastName: lastName)
+                    Button(action: signup) {
+                        HStack {
+                            if provider.isLoading {
+                                LoadingView()
+                            } else {
+                                Image(systemName: "arrow.right")
+                                    .frame(width: 24, height: 24)
+                                
+                                Text("Sign Up")
+                                    .font(.headline)
+                            }
                         }
+                        .padding()
+                        .frame(width: 200)
+                        .background(!isFormValid ? Color.gray : Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(40)
+                        .disabled(!isFormValid)
                     }
                     
-                    VStack{
-                        Text(note)
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 30)
-                    }
+                    Text("By signing up, you agree to our Terms of Service and Privacy Policy.")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 30)
                 }
                 .padding()
                 .navigationTitle("Create Account")
-                .navigationDestination(isPresented: $provider.isAuthenticated) {
-                    HomeView(postViewModel: PostViewModel(user: provider.user))
+                .navigationDestination(isPresented: $isAuth) {
+                    MainView()
                 }
             }
         }
     }
-}
-
-#Preview {
-    RegisterView().environmentObject(AuthViewModel())
+    
+    private func signup() {
+        provider.signUp(email: email, password: password, firstName: firstName, lastName: lastName)
+        isAuth = provider.isAuthenticated
+        isAuth ? HapticManager.shared.generateSuccessFeedback() : HapticManager.shared.generateSuccessFeedback()
+    }
 }

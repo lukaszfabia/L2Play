@@ -9,21 +9,16 @@ import SwiftUI
 
 
 struct LoginView: View {
-    @State private var password: String = ""
-    @State private var email: String = ""
-    
-    @State private var translatedText: String = ""
-    
     @EnvironmentObject var provider: AuthViewModel
 //    @EnvironmentObject var t: TranslatorService
-    
-    private let loginInBold = NSLocalizedString("LogInPrompt0", comment: "")
-    private let loginCont = NSLocalizedString("LogInPrompt1", comment: "")
-    
-    
-    private let note = NSLocalizedString("NoteSignIn", comment: "")
-    
-    private let password_ = NSLocalizedString("Password", comment: "")
+
+    @State private var password: String = ""
+    @State private var email: String = ""
+    @State private var isAuth: Bool = false
+        
+    var isFormValid: Bool {
+        return !password.isEmpty && !email.isEmpty
+    }
     
     
     var body: some View {
@@ -54,10 +49,10 @@ struct LoginView: View {
                     
                     
                     VStack {
-                        Text(loginInBold)
+                        Text("Time to get back in the game!")
                             .fontWeight(.bold)
                             .foregroundStyle(.gray)
-                        + Text(loginCont)
+                        Text("Log in to access your account!")
                             .foregroundStyle(.gray)
                     }
                     .lineLimit(nil)
@@ -68,12 +63,12 @@ struct LoginView: View {
                     
                     VStack {
                         Section {
-                            CustomFieldWithIcon(acc: $email, placeholder: "Email", icon: "envelope", isSecure: false)
+                            CustomFieldWithIcon(acc: $email, placeholder: "joe.doe@example.com", icon: "envelope", isSecure: false)
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                             
-                            CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
+                            CustomFieldWithIcon(acc: $password, placeholder: "", icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
@@ -86,7 +81,7 @@ struct LoginView: View {
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
-                            }
+                            }.disabled(true)
                             
                             Spacer()
                             
@@ -100,15 +95,33 @@ struct LoginView: View {
                         
                         
                         VStack{
-                            ButtonWithIcon(color: .accentColor, text: Text("Log in"), icon: "arrow.right") {
-                                provider.login(email: email, password: password)
+                            Button(action: login) {
+                                HStack {
+                                    if provider.isLoading {
+                                        LoadingView()
+                                    } else {
+                                        Image(systemName: "arrow.right")
+                                            .frame(width: 24, height: 24)
+                                        
+                                        Text("Sign In")
+                                            .font(.headline)
+                                    }
+                                }
+                                .padding()
+                                .frame(width: 200)
+                                .background(!isFormValid ? Color.gray : Color.accentColor)
+                                .foregroundColor(.white)
+                                .cornerRadius(40)
+                                .disabled(!isFormValid)
                             }
+
                             
                             CustomDivider(text: Text("or"))
                             
                             GoogleButton{
                                 provider.continueWithGoogle(presenting: getRootViewController())
                             }
+                            
                         }
                     }
                     .cornerRadius(20)
@@ -116,7 +129,7 @@ struct LoginView: View {
                     Spacer()
                     
                     VStack{
-                        Text(note)
+                        Text("By signing in, you agree to our Terms of Service and Privacy Policy.")
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
@@ -125,15 +138,18 @@ struct LoginView: View {
                 }
                 .padding()
                 .navigationTitle("Login")
-                .navigationDestination(isPresented: $provider.isAuthenticated) {
-                    HomeView(postViewModel: PostViewModel(user: provider.user))
+                .navigationDestination(isPresented: $isAuth) {
+                    MainView()
                 }
             }
         }
     }
+    
+    private func login() {
+        provider.login(email: email, password: password)
+        
+        isAuth = provider.isAuthenticated
+        
+        isAuth ? HapticManager.shared.generateSuccessFeedback() : HapticManager.shared.generateSuccessFeedback()
+    }
 }
-
-//#Preview {
-//    LoginView().environmentObject(AuthViewModel())
-//}
-

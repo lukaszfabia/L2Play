@@ -9,10 +9,11 @@
 import SwiftUI
 
 struct ReviewForm: View {
-    @StateObject var gv: GameViewModel
+    @ObservedObject var gv: GameViewModel
     @Binding var closeForm: Bool
     @State var review : String = ""
     @State var rating : Int = 1
+    @State private var isSubmitting : Bool = false
     
     
     private let options = [1, 2, 3, 4, 5]
@@ -73,9 +74,13 @@ struct ReviewForm: View {
                 
                 
                 Button(action: submit){
-                    HStack{
-                        Image(systemName: "paperplane")
-                        Text("Submit review")
+                    if isSubmitting {
+                        LoadingView()
+                    } else {
+                        HStack{
+                            Image(systemName: "paperplane")
+                            Text("Submit review")
+                        }
                     }
                 }
                 .disabled(review.isEmpty)
@@ -92,6 +97,11 @@ struct ReviewForm: View {
     }
     
     private func submit() {
+        isSubmitting = true
+        defer {
+            isSubmitting = false
+        }
+        
         Task {
             if !review.isEmpty && rating > 0 && rating < 6 {
                 await gv.addReview(content: review, rating: rating)
@@ -100,6 +110,10 @@ struct ReviewForm: View {
                 } else {
                     HapticManager.shared.generateNotificationFeedback(type: .success)
                 }
+                
+                review = ""
+                rating = 1
+                
                 closeForm.toggle()
             }
         }

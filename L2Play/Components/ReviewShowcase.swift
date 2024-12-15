@@ -8,21 +8,34 @@ import SwiftUI
 
 struct ReviewShowcase: View {
     @ObservedObject var reviewViewModel: ReviewViewModel
-    var refreshUser: () async -> Void
+    
+    @StateObject private var gameViewModel: GameViewModel
+    
+    init(reviewViewModel: ReviewViewModel) {
+        self.reviewViewModel = reviewViewModel
+        self._gameViewModel = StateObject(wrappedValue: GameViewModel(game: reviewViewModel.game, user: reviewViewModel.user))
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            CustomDivider()
-            headerView
-            ratingView
-            reviewTextView
-            oldReviewsView(for: reviewViewModel.review.oldReviews)
-            reactionBarView
+        Group {
+            if reviewViewModel.isLoading {
+                LoadingView()
+            }else {
+                VStack(alignment: .leading, spacing: 10) {
+                    headerView
+                    ratingView
+                    reviewTextView
+                    oldReviewsView(for: reviewViewModel.review.oldReviews)
+                    reactionBarView
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }.task {
+            await reviewViewModel.fetchComments()
         }
-        .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Header View
+
     private var headerView: some View {
         HStack(spacing: 10) {
             UserImage(pic: reviewViewModel.review.author.profilePicture)
@@ -35,11 +48,11 @@ struct ReviewShowcase: View {
                 timestampView
             }
             Spacer()
-            MenuWithActions(reviewViewModel: reviewViewModel, reload: refreshUser)
+            MenuWithActions(reviewViewModel: reviewViewModel, gameViewModel: gameViewModel)
         }
     }
 
-    // MARK: - Timestamp View
+
     private var timestampView: some View {
         HStack(spacing: 5) {
             if reviewViewModel.review.updatedAt != reviewViewModel.review.createdAt {
@@ -56,7 +69,7 @@ struct ReviewShowcase: View {
         }
     }
 
-    // MARK: - Rating View
+
     private var ratingView: some View {
         HStack {
             Text("\(reviewViewModel.review.rating)")
@@ -67,7 +80,7 @@ struct ReviewShowcase: View {
         }
     }
 
-    // MARK: - Review Text View
+ 
     private var reviewTextView: some View {
         Text(reviewViewModel.review.review)
             .padding(.top, 5)
@@ -75,12 +88,12 @@ struct ReviewShowcase: View {
             .foregroundColor(.primary)
     }
 
-    // MARK: - Reaction Bar View
+
     private var reactionBarView: some View {
         ReactionBar(
             reviewViewModel: reviewViewModel,
             userViewModel: UserViewModel(user: reviewViewModel.user),
-            refreshGame: { }
+            gameViewModel: gameViewModel
         )
     }
 }

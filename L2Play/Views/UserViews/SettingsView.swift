@@ -116,7 +116,7 @@ struct SettingsView: View {
                         .listStyle(InsetGroupedListStyle())
                     }
                     .cornerRadius(10)
-                    .navigationTitle("Hello, \(provider.user.fullName().takeFirstWord())!")
+                    .navigationTitle("greeting".localized(with: provider.user.firstName ?? ""))
                     .preferredColorScheme(settingsHandler.currentTheme())
                 }
             }

@@ -34,7 +34,7 @@ struct GameRecommendationView: View {
                         .font(.caption)
                         .foregroundStyle(.gray)
                     
-                    Text(game.state == .notPlayed ? "Not played" : game.state.rawValue)
+                    Text(game.state == .notPlayed ? "Not played".localized() : game.state.rawValue.localized())
                         .font(.caption)
                         .foregroundStyle(.gray)
                 }

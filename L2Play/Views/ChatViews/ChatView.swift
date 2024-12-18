@@ -21,7 +21,7 @@ struct ChatView: View {
         .alert(isPresented: .constant(chatViewModel.errorMessage != nil)) {
             Alert(
                 title: Text("Error"),
-                message: Text(chatViewModel.errorMessage!),
+                message: Text(chatViewModel.errorMessage ?? "Unknown error"),
                 dismissButton: .default(Text("OK"))
             )
         }
@@ -30,21 +30,28 @@ struct ChatView: View {
     private var chatHistory: some View {
         ScrollViewReader { scrollView in
             ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(chatViewModel.messages.sorted{$0.timestamp < $1.timestamp}) { message in
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(chatViewModel.messages) { message in
                         MessageBubble(message: message, chat: chatViewModel.chat!)
+                            .id(message.id)
                     }
                 }
-            }
+                .padding(.horizontal, 10)
+            }   
             .onChange(of: chatViewModel.messages) {
-                DispatchQueue.main.async {
-                    scrollView.scrollTo(chatViewModel.messages.last?.id, anchor: .bottom)
-                }
+                scrollToLastMessage(scrollView)
             }
         }
     }
     
-    
+    private func scrollToLastMessage(_ scrollView: ScrollViewProxy) {
+        if let lastMessageID = chatViewModel.getLastMessage() {
+            DispatchQueue.main.async {
+                scrollView.scrollTo(lastMessageID, anchor: .bottom)
+            }
+        }
+    }
+
     private var chatInputBar: some View {
         HStack {
             TextField("Enter your message", text: $messageText)
@@ -69,8 +76,13 @@ struct ChatView: View {
     private func sendMessage() {
         Task {
             await chatViewModel.sendMessage(text: messageText)
-            chatViewModel.errorMessage == nil ?
-            HapticManager.shared.generateSuccessFeedback() : HapticManager.shared.generateErrorFeedback()
+            
+            if chatViewModel.errorMessage == nil {
+                HapticManager.shared.generateSuccessFeedback()
+            } else {
+                HapticManager.shared.generateErrorFeedback()
+            }
+            
             messageText = ""
         }
     }

@@ -393,6 +393,8 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             try await manager.findAll(collection: .posts, whereIs: ("author.id", user.id))
         }
         
+        // TODO: handle user in chat
+        
         if case .success(var comments) = ra, case .success(var reviews) = rb, case .success(var posts) = rc {
             let author = Author(user: user)
             

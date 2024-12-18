@@ -96,10 +96,10 @@ struct StatsView: View {
                             
                             Chart(stateData) { item in
                                 BarMark(
-                                    x: .value("State", item.key.rawValue),
+                                    x: .value("State", item.key.rawValue.toSentence().localized()),
                                     y: .value("Count", item.count)
                                 )
-                                .foregroundStyle(by: .value("State", item.key.rawValue))
+                                .foregroundStyle(by: .value("State", item.key.rawValue.toSentence().localized()))
                                 .cornerRadius(12)
                             }
                             .frame(height: 300)

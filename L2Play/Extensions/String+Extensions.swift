@@ -23,4 +23,8 @@ extension String {
     func localized(with arguments: CVarArg...) -> String {
         return String(format: NSLocalizedString(self, comment: ""), arguments: arguments)
     }
+    
+    func toSentence() -> String {
+        return self.prefix(1).uppercased() + self.dropFirst()
+    }
 }

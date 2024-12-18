@@ -19,10 +19,10 @@ struct RegisterView: View {
     @State private var isAuth : Bool = false
     
     private let details: [String] = [
-        "At least 1 Big letter",
-        "At least 1 Digit",
-        "Mininum 6 characters",
-        "At least 1 Special Sign",
+        "At least 1 Big letter".localized(),
+        "At least 1 Digit".localized(),
+        "Mininum 6 characters".localized(),
+        "At least 1 Special Sign".localized(),
     ]
     
     var isFormValid: Bool {

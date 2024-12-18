@@ -38,7 +38,7 @@ struct ReviewShowcase: View {
 
     private var headerView: some View {
         HStack(spacing: 10) {
-            UserImage(pic: reviewViewModel.review.author.profilePicture)
+            UserImage(pic: reviewViewModel.review.author.profilePicture, initial: reviewViewModel.review.author.name)
             VStack(alignment: .leading) {
                 NavigationLink(destination: LazyGameView(gameID: reviewViewModel.review.gameID, userViewModel: UserViewModel(user: reviewViewModel.user))) {
                     Text(reviewViewModel.review.author.name)

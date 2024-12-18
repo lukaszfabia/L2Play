@@ -150,7 +150,7 @@ struct AddCommentView: View {
     var body: some View {
         HStack {
             if let avatar = reviewViewModel.user.profilePicture {
-                UserImage(pic: avatar, w: 45, h: 45)
+                UserImage(pic: avatar, initial: reviewViewModel.user.fullName(), w: 45, h: 45)
             }
             
             TextField("Add a comment...", text: $comment)
@@ -259,7 +259,7 @@ struct CommentRow: View {
     
     var body: some View {
         HStack(spacing: 6) {
-            UserImage(pic: comment.author.profilePicture, w: 40, h: 40)
+            UserImage(pic: comment.author.profilePicture, initial: comment.author.name, w: 40, h: 40)
             
             VStack(alignment: .leading) {
                 NavigationLink(destination: LazyUserView(userID: comment.author.id, userViewModel: UserViewModel()), label: {
@@ -292,7 +292,10 @@ struct ReviewRow: View {
     
     private func headerWithReviewer() -> some View {
         HStack (spacing: 10) {
-            UserImage(pic: reviewViewModel.review.author.profilePicture)
+            UserImage(pic:
+                    reviewViewModel.review.author.profilePicture,
+                    initial: reviewViewModel.review.author.name
+            )
             
             VStack (alignment: .leading) {
                 NavigationLink(destination: UserView(user: userViewModel.user), label: {

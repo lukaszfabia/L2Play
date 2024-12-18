@@ -20,22 +20,22 @@ extension Date {
         let years = days / 365
         
         switch true {
-        case years >= 1:
-            return "\(years) year\(years > 1 ? "s" : "") ago"
-        case months >= 1:
-            return "\(months) month\(months > 1 ? "s" : "") ago"
-        case weeks >= 1:
-            return "\(weeks) week\(weeks > 1 ? "s" : "") ago"
-        case days >= 1:
-            return "\(days) day\(days > 1 ? "s" : "") ago"
-        case hours >= 1:
-            return "\(hours) hour\(hours > 1 ? "s" : "") ago"
-        case minutes >= 1:
-            return "\(minutes) minute\(minutes > 1 ? "s" : "") ago"
-        default:
-            let seconds = Int(secondsBetween)
-            return "\(seconds) second\(seconds > 1 ? "s" : "") ago"
-        }
+           case years >= 1:
+               return String(format: NSLocalizedString(years > 1 ? "year_plural_ago" : "year_ago", comment: ""), years)
+           case months >= 1:
+               return String(format: NSLocalizedString(months > 1 ? "month_plural_ago" : "month_ago", comment: ""), months)
+           case weeks >= 1:
+               return String(format: NSLocalizedString(weeks > 1 ? "week_plural_ago" : "week_ago", comment: ""), weeks)
+           case days >= 1:
+               return String(format: NSLocalizedString(days > 1 ? "day_plural_ago" : "day_ago", comment: ""), days)
+           case hours >= 1:
+               return String(format: NSLocalizedString(hours > 1 ? "hour_plural_ago" : "hour_ago", comment: ""), hours)
+           case minutes >= 1:
+               return String(format: NSLocalizedString(minutes > 1 ? "minute_plural_ago" : "minute_ago", comment: ""), minutes)
+           default:
+               let seconds = Int(secondsBetween)
+               return String(format: NSLocalizedString(seconds > 1 ? "second_plural_ago" : "second_ago", comment: ""), seconds)
+           }
     }
     
     func getMonthAndYear() -> String? {

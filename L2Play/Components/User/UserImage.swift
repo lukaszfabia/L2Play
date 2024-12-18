@@ -9,6 +9,7 @@ import SwiftUI
 
 struct UserImage: View {
     let pic: URL?
+    let initial: String
     var w: CGFloat = 50
     var h: CGFloat = 50
     
@@ -33,11 +34,14 @@ struct UserImage: View {
                     }
                 } else {
                     Circle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.accentColor)
                         .frame(width: w, height: h)
-                        .overlay(Text("No profile picture")
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center))
+                                
+                    Text(initial.first?.uppercased() ?? "")
+                        .font(.system(size: w * 0.9, weight: .bold))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
                 }
             }
         }

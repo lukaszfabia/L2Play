@@ -88,7 +88,7 @@ final class RecommendationService {
         
         return vectors
     }
-
+    
     private func cosineSimilarity(vec1: [Int], vec2: [Int]) -> Double {
         let dotProduct = zip(vec1, vec2).map { $0.0 * $0.1 }.reduce(0, +)
         let magnitude1 = sqrt(vec1.map { Double($0 * $0) }.reduce(0, +))

@@ -27,7 +27,6 @@ struct UserView: View {
     @State private var dropped: [GameWithState] = []
     
     
-    
     init(user: User?) {
         self._userViewModel = StateObject(wrappedValue: UserViewModel(user: user))
     }
@@ -82,11 +81,13 @@ struct UserView: View {
             VStack(alignment: .leading) {
                 ProfileHeaderView(user: currentUser, actionSection: actionButtons)
                 
-                if isReadOnly {
-                    if currentUser.hasBlocked(provider.user.id) {
-                        youreBlocked()
-                    } else if provider.user.hasBlocked(currentUser.id) {
-                        youBlockedUser()
+                VStack(alignment: .center) {
+                    if isReadOnly {
+                        if currentUser.hasBlocked(provider.user.id) {
+                            youreBlocked()
+                        } else if provider.user.hasBlocked(currentUser.id) {
+                            youBlockedUser()
+                        }
                     }
                 }
                 
@@ -171,11 +172,11 @@ struct UserView: View {
                 .font(.title2)
             
             VStack(alignment: .leading) {
-                Text("\(currentUser.firstName ?? "") is blocked.")
+                Text("whoisblocked0".localized(with: currentUser.fullName()))
                     .font(.headline)
                     .foregroundColor(.red)
                 
-                Text("You've blocked \(currentUser.firstName ?? ""). You can always unblock them.")
+                Text("whoisblocked1".localized(with: currentUser.fullName()))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -199,11 +200,11 @@ struct UserView: View {
                 .font(.title2)
             
             VStack(alignment: .leading) {
-                Text("Blocked")
+                Text("You're blocked.")
                     .font(.headline)
                     .foregroundColor(.red)
                 
-                Text("You've been blocked by \(currentUser.firstName ?? "").")
+                Text("iamblocked".localized(with: currentUser.firstName ?? ""))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -218,7 +219,7 @@ struct UserView: View {
     
     @ViewBuilder
     private func actionButtons() -> some View {
-        if isReadOnly {
+        if isReadOnly && !provider.user.hasBlocked(currentUser.id) {
             HStack(spacing: 20) {
                 Spacer()
                 
@@ -259,10 +260,28 @@ struct UserView: View {
             self.favs = dict[.favorite]?.map { game in Item(game: game) } ?? []
             
             self.collection = [
-                Collection(games: self.planned, title: "Upcoming Adventures", subtitle: "Games you're excited to start.", state: .planned),
-                Collection(games: self.playing, title: "Current Quests", subtitle: "Games you're immersed in right now.", state: .playing),
-                Collection(games: self.completed, title: "Victorious Journeys", subtitle: "Games you've conquered.", state: .completed),
-                Collection(games: self.dropped, title: "Paused Dreams", subtitle: "Games you've set aside for now.", state: .dropped)
+                Collection(
+                    games: self.planned,
+                    title: "Upcoming Adventures".localized(),
+                    subtitle: "Games you're excited to start.".localized(),
+                    state: .planned),
+                
+                Collection(
+                    games: self.playing,
+                    title: "Current Quests".localized(),
+                    subtitle: "Games you're immersed in right now.".localized(),
+                    state: .playing
+                ),
+                Collection(
+                    games: self.completed,
+                    title: "Victorious Journeys".localized(),
+                    subtitle: "Games you've conquered.".localized(),
+                    state: .completed),
+                Collection(
+                    games: self.dropped,
+                    title: "Paused Dreams".localized(),
+                    subtitle: "Games you've set aside for now.".localized(),
+                    state: .dropped)
             ]
         }
     }

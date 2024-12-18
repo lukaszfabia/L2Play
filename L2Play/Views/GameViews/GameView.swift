@@ -151,14 +151,14 @@ struct GameView: View {
         VStack {
             Picker("State", selection: $selectedState) {
                 ForEach(GameState.allCases.prefix(GameState.allCases.count / 2)) { state in
-                    Text(state == .notPlayed ? "Not played" : state.rawValue.capitalized).tag(state)
+                    Text(state == .notPlayed ? "Not played".localized() : state.rawValue.capitalized.localized()).tag(state)
                 }
             }
             .pickerStyle(.segmented)
             
             Picker("State", selection: $selectedState) {
                 ForEach(GameState.allCases.suffix(GameState.allCases.count / 2)) { state in
-                    Text(state.rawValue.capitalized).tag(state)
+                    Text(state.rawValue.capitalized.localized()).tag(state)
                 }
             }
             .pickerStyle(.segmented)

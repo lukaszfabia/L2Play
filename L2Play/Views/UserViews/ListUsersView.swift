@@ -68,7 +68,7 @@ private struct ListUsersView<ButtonRow: View>: View {
                 users = await userViewModel.getAllWithIds(ids)
             }
         }
-        .navigationTitle(navigationBarTitle.rawValue)
+        .navigationTitle(navigationBarTitle.rawValue.localized())
     }
     
     var searchResults: [User] {

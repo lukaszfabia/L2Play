@@ -101,11 +101,13 @@
 "Reviews" = "Recenzje";
 "Stats" = "Statystyki";
 "Dark Mode" = "Tryb nocny";
-"Change Languauge" = "Zmień język";
+"Change Language" = "Zmień język";
+"Language" = "Język";
+"No profile picture" = "Brak awataru";
 "Appearnce" = "Wygląd";
 "Langauge" = "Język";
 "Title" = "Tytuł";
-"Append media for posts!" = "Dołącz zdjęcie!";
+"Append media for post!" = "Dołącz zdjęcie!";
 "Post" = "Opublikuj";
 "Be first!" = "Bądź pierwszy";
 
@@ -180,7 +182,7 @@
 
 "Search..." = "Szukaj...";
 
-"Blocked Users" = "Zablokowani";
+"Blocked" = "Zablokowani";
 
 "View all the users you have blocked. You can unblock them by clicking button." = "Wgląd do wszystkich twoich zablokowanych użytkowników. Odblokuj klikając przycisk.";
 
@@ -221,6 +223,26 @@
 "Following" = "Obserwujesz";
 "Follow" = "Obserwuj";
 "Unblock" = "Odblokuj";
+"Unblock" = "Odblokuj";
+"Your blocked users"= "Twoi zablokowani użytkownicy";
+"Followers" = "Obserwujący";
+"Send Message" = "Wyśli wiadomość";
+
+"Not played" = "Nieograne";
+"Planned" = "Zaplanowane";
+"Playing" = "Grane";
+"Completed" = "Skończone";
+"Dropped" = "Porzucone";
+"Favorite" = "Ulubione";
+"New password" = "Nowe hasło";
+"Ascending" = "Rosnąco";
+"Descending" = "Malejąco";
+"Updated at" = "Czas";
+"Name" = "Nazwa";
+"State" = "Stan";
+
+"Start Chatting" = "Czatuj";
+
 
 
 
@@ -229,3 +251,22 @@
 "welcoming" = "Witaj, %@!";
 "fellingsAboutGame" = "Podziel się wrażeniami z %@.";
 "block" = "Zablokuj %@";
+"whoisblocked0" = "%@ jest zablokowany.";
+"whoisblocked1" = "Zablokowano %@a. Pamiętaj, że możesz oblokować użytkownika.";
+"iamblocked" = "Zostałeś/aś zablokowany/a %@.";
+"year_ago" = "%d rok temu";
+"year_plural_ago" = "%d lata temu";
+"month_ago" = "%d miesiąc temu";
+"month_plural_ago" = "%d miesiące temu";
+"week_ago" = "%d tydzień temu";
+"week_plural_ago" = "%d tygodnie temu";
+"day_ago" = "%d dzień temu";
+"day_plural_ago" = "%d dni temu";
+"hour_ago" = "%d godzina temu";
+"hour_plural_ago" = "%d godziny temu";
+"minute_ago" = "%d minuta temu";
+"minute_plural_ago" = "%d minuty temu";
+"second_ago" = "%d sekunda temu";
+"second_plural_ago" = "%d sekundy temu";
+"added" = "Dodano %@";
+

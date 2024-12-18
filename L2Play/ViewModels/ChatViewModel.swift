@@ -193,11 +193,13 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
     }
 
 
-    func fetchChatsData(chatsIDs: [String]) async -> [ChatData] {
+    func fetchChatsData(chatsIDs: [String], sender: User? = nil) async -> [ChatData] {
         isLoading = true
         defer { isLoading = false }
         
         var chatsData: [ChatData] = []
+        
+        var idsToRemove: [String] = []
         
         let path = ref.child("chats")
         
@@ -215,7 +217,17 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
                     print("Failed to create ChatData for chatID: \(chatID)")
                 }
             } catch {
+                idsToRemove.append(chatID)
                 print("Error fetching data for chatID: \(chatID), Error: \(error.localizedDescription)")
+            }
+        }
+        
+        
+        // clear chats create during testing 
+        if let sender, !chatsIDs.isEmpty {
+            let newSender = sender.removeChat(chatID: idsToRemove)
+            _ = await performAsyncOperation { [self] in
+                try await manager.update(collection: .users, id: newSender.id, object: newSender)
             }
         }
         
@@ -226,5 +238,28 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
     func getLastMessage() -> UUID? {
         guard let chat else { return nil }
         return chat.messages.last?.id
+    }
+    
+    func deleteChat(chatData: ChatData) async {
+        self.isLoading = true
+        defer {self.isLoading = false}
+        
+        let chatID = chatData.chatID
+        let ids: [String] = chatData.participants.map { $0.key }
+        
+        let path = ref.child("chats").child(chatID)
+        
+        _ = await performAsyncOperation { [self] in
+            var users: [User] = try await manager.findAll(collection: .users, ids: ids)
+            users = users.map({ user in
+                user.removeChat(chatID: [chatID])
+            })
+            
+            guard users.count >= 2 else {throw NSError(domain: "Firebase", code: -1, userInfo: nil)}
+            
+            try await manager.updateAll(collection: .users, lst: users)
+            
+            try await path.removeValue()
+        }
     }
 }

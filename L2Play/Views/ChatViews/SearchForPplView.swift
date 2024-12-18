@@ -82,7 +82,7 @@ struct SearchForPplView: View {
     
     private func userRow(profile: User) -> some View {
         HStack(spacing: 20) {
-            UserImage(pic: profile.profilePicture, w: 40, h: 40)
+            UserImage(pic: profile.profilePicture, initial: profile.fullName(), w: 40, h: 40)
             HStack(spacing: 10) {
                 Text(profile.fullName())
                     .font(.headline)

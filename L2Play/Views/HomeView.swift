@@ -23,7 +23,7 @@ struct HomeView: View {
                     LoadingView()
                 } else {
                     main
-                        .navigationTitle("welcoming".localized(with: provider.user.fullName()))
+                        .navigationTitle("welcoming".localized(with: provider.user.firstName ?? ""))
                         .toolbar {
                             ToolbarItem(placement: .navigationBarTrailing) {
                                 Button(action: { postcreator.toggle() }) {
@@ -122,7 +122,7 @@ struct PostForm: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                UserImage(pic: provider.user.profilePicture)
+                UserImage(pic: provider.user.profilePicture, initial: provider.user.fullName())
                 
                 VStack(alignment: .leading) {
                     Text(provider.user.fullName())
@@ -312,7 +312,7 @@ struct PostDetailsView: View {
         VStack {
             HStack {
                 if let avatar = provider.user.profilePicture {
-                    UserImage(pic: avatar, w: 45, h: 45)
+                    UserImage(pic: avatar, initial: provider.user.fullName(), w: 45, h: 45)
                 }
                 
                 TextField("Repost...", text: $content)
@@ -374,7 +374,7 @@ private struct profile: View {
     var body: some View {
         HStack {
             NavigationLink(destination: LazyUserView(userID: post.author.id, userViewModel: UserViewModel())) {
-                UserImage(pic: post.author.profilePicture)
+                UserImage(pic: post.author.profilePicture, initial: post.author.name)
             }
             
             VStack(alignment: .leading) {

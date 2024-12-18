@@ -16,7 +16,7 @@ struct MessageBubble: View {
         if let author = getAuthor(for: message, in: chat) {
             HStack {
                 if !isCurrentUser() {
-                    UserImage(pic: author.profilePicture, w: 30, h: 30)
+                    UserImage(pic: author.profilePicture, initial: author.name, w: 30, h: 30)
                 }
                 if isCurrentUser() {
                     Spacer()
@@ -26,7 +26,7 @@ struct MessageBubble: View {
                     Text(message.text)
                         .padding()
                         .background(isCurrentUser() ? Color.accentColor : Color.gray.opacity(0.2))
-                        .foregroundColor(.primary)
+                        .foregroundColor(isCurrentUser() ? .white : .primary)
                         .cornerRadius(12)
                         .frame(maxWidth: 250, alignment: isCurrentUser() ? .trailing : .leading)
                     
@@ -36,7 +36,7 @@ struct MessageBubble: View {
                 }
                 
                 if isCurrentUser() {
-                    UserImage(pic: author.profilePicture, w: 30, h: 30)
+                    UserImage(pic: author.profilePicture, initial: author.name, w: 30, h: 30)
                 }
                 if !isCurrentUser() {
                     Spacer()

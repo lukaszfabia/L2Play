@@ -132,6 +132,13 @@ class User: Codable, Identifiable, Hashable {
         return self
     }
     
+    func removeChat(chatID: [String]) -> User {
+        chats.removeAll(where: {chatID.contains($0)})
+        
+        return self 
+    }
+    
+    
     // MARK: - Initializers
     init(firebaseUser: FirebaseAuth.User) {
         self.id = firebaseUser.uid

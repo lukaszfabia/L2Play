@@ -33,6 +33,17 @@ struct ChatView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(chatViewModel.messages.sorted{$0.timestamp < $1.timestamp}) { message in
                         MessageBubble(message: message, chat: chatViewModel.chat!)
+                            .id(message.id)
+                    }
+                }.padding(.horizontal, 10)
+            }
+            .onAppear {
+                DispatchQueue.main.async {
+                    if let lastMessageID = chatViewModel.messages.last?.id {
+                        print("Scrolling to message ID: \(lastMessageID)")
+                        scrollView.scrollTo(lastMessageID, anchor: .bottom)
+                    } else {
+                        print("No messages to scroll to.")
                     }
                 }
             }

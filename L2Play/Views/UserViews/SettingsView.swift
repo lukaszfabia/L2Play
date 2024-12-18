@@ -19,7 +19,7 @@ struct SettingsView: View {
             VStack(alignment: .leading) {
                 VStack {
                     HStack {
-                        UserImage(pic: provider.user.profilePicture, w: 100, h: 100)
+                        UserImage(pic: provider.user.profilePicture,initial: provider.user.fullName(), w: 100, h: 100)
                         
                         VStack {
                             HStack {

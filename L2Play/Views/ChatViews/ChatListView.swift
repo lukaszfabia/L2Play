@@ -17,7 +17,7 @@ struct ChatListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if provider.isLoading {
+                if provider.isLoading || chatViewModel.isLoading {
                     LoadingView()
                 }
                 else if let err = chatViewModel.errorMessage {
@@ -70,7 +70,9 @@ struct ChatListView: View {
     private var chatList: some View {
         ScrollView {
             ForEach(chats) { chat in
-                ChatRow(authUser: provider.user, chatData: chat)
+                ChatRow(authUser: provider.user, chatData: chat) { chatToDelete in
+                    await chatViewModel.deleteChat(chatData: chat)
+                }
             }
         }
     }
@@ -79,7 +81,7 @@ struct ChatListView: View {
         // get user chats
         // take only participants and
         // detect who is receiver and return Author in the future take last msg
-        self.chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats)
+        self.chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats, sender: provider.user)
     }
     
 }

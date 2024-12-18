@@ -30,7 +30,7 @@ struct ProfileHeaderView<ActionSection: View>: View {
                         .frame(width: 105, height: 105)
                         .shadow(radius: 12)
                     
-                    UserImage(pic: user.profilePicture, w: 100, h: 100)
+                    UserImage(pic: user.profilePicture, initial: user.fullName(), w: 100, h: 100)
                 }
             }
             .padding()

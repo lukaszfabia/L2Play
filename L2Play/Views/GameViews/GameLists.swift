@@ -25,7 +25,7 @@ struct GameList: View {
                 HStack {
                     Picker("Sort by", selection: $sortProperty) {
                         ForEach(SortAttributeForGame.allCases) { attribute in
-                            Text(attribute.rawValue)
+                            Text(attribute.rawValue.localized())
                                 .tag(attribute)
                         }
                     }
@@ -34,7 +34,7 @@ struct GameList: View {
                     
                     Picker("Order", selection: $sorted) {
                         ForEach(SortOption.allCases) { option in
-                            Text(option.rawValue.capitalized)
+                            Text(option.rawValue.capitalized.localized())
                                 .tag(option)
                         }
                     }
@@ -55,7 +55,7 @@ struct GameList: View {
                 .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle(state.rawValue.capitalized)
+            .navigationTitle(state.rawValue.capitalized.localized())
         }
     }
     
@@ -82,7 +82,7 @@ struct GameList: View {
                     .font(.headline)
                 Text(game.studio)
                     .font(.subheadline)
-                Text("Added \(game.updatedAt.timeAgoSinceDate())")
+                Text("added".localized(with: game.updatedAt.timeAgoSinceDate()))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

@@ -24,7 +24,6 @@ struct EditAccountView: View {
     
     private let firstName_ = NSLocalizedString("First name", comment: "")
     private let lastName_ = NSLocalizedString("Last name", comment: "")
-    private let password_ = NSLocalizedString("New Password", comment: "")
     
     var body: some View {
         NavigationStack {
@@ -43,7 +42,7 @@ struct EditAccountView: View {
                                 if let image = selectedImage {
                                     LocalImage(pic: image, w: width, h: height)
                                 } else {
-                                    UserImage(pic: provider.user.profilePicture, w: width, h: height)
+                                    UserImage(pic: provider.user.profilePicture, initial: provider.user.fullName(), w: width, h: height)
                                 }
                                 
                                 
@@ -94,7 +93,7 @@ struct EditAccountView: View {
                                             .textInputAutocapitalization(.never)
                                         
                                         
-                                        CustomFieldWithIcon(acc: $password, placeholder: password_, icon: "lock", isSecure: true)
+                                        CustomFieldWithIcon(acc: $password, placeholder: "New password".localized(), icon: "lock", isSecure: true)
                                             .autocorrectionDisabled()
                                             .keyboardType(.alphabet)
                                             .textInputAutocapitalization(.never)

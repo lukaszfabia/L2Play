@@ -15,7 +15,7 @@ struct UserRow<RowButton: View>: View {
     
     var body: some View {
         HStack {
-            UserImage(pic: user.profilePicture)
+            UserImage(pic: user.profilePicture, initial: user.fullName())
             
             VStack(alignment: .leading) {
                 NavigationLink(destination: LazyUserView(userID: user.id, userViewModel: UserViewModel()), label: {

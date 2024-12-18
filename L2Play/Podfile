@@ -1,9 +1,0 @@
-platform :ios, '12.0'
-
-target 'L2Play' do
-  use_frameworks!
-
-  pod 'Firebase/Database'
-  pod 'Firebase/Auth'
-
-end

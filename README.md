@@ -6,6 +6,25 @@
 
 L2Play is simple social media application, which connects people sharing same passion - gaming. It enables its users to rate the games they have already played, read reviews from other people and of course write their own.
 
+## About
+
+This project follows the `MVVM` pattern. Firebase is used as the backend solution, allowing us to focus on the mobile app. Below is a short description of the **main** directories:
+
+- **`Views/`** – Contains the view components.
+
+- **`ViewModels/`** – Contains classes that handle business logic.
+- **`Services/`** – Includes the following components:
+
+  - **`Firebase/`** – Classes for communication with Firebase.
+
+  - **`Translation/`** – A service that will handle multi-language support (replacing the use of _Localized.strings_ in the future).
+  - **`Recommendation/`** – A class that helps recommend games to the user.
+  - **`Cdn/`** – Responsible for communication with the content API.
+  - **`EnvVars/`** – Handles environment variables.
+
+- **`Components/`** – Reusable UI components.
+- **`Models/`** – Data models used for managing and processing data.
+
 ## Functionalities
 
 - :speech_balloon: Real time messages (?)
@@ -20,6 +39,6 @@ L2Play is simple social media application, which connects people sharing same pa
 - :no_entry_sign: User blocking
 - :key: Password restoring
 - :gb: Handling other languages based on the locations
-- :triangular_flag_on_post: Censorship of profanity 
-- :bell: Notifications 
+- :triangular_flag_on_post: Censorship of profanity
+- :bell: Notifications
 - :bulb: Recomendations

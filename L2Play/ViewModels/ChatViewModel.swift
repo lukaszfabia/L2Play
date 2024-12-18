@@ -33,7 +33,6 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
         
         if let chatID = chatID {
             fetchChat(chatID: chatID)
-            listenForMessages()
         } else if let sender, let receiver {
             Task {
                 await createNewChat(sender: sender, receiver: receiver)
@@ -50,12 +49,6 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
             self?.removeObservers()
         }
     }
-    
-
-    var getMessages: [Message] {
-        guard let chat else { return [] }
-        return chat.messages.reversed()
-    }
 
 
     func fetchChat(chatID: String) {
@@ -71,7 +64,8 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
             
             if let chat = Chat(from: chatData, chatID: chatID) {
                 self.chat = chat
-                self.messages = chat.messages
+                self.messages = chat.messages.sorted {$0.timestamp < $1.timestamp}
+                self.listenForMessages()
             } else {
                 self.errorMessage = "Failed to parse chat data"
             }
@@ -108,7 +102,8 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
                 }
             }
             
-            try await manager.updateAll(collection: .users, lst: [sender.addNewChat(chatID: chatID), receiver.addNewChat(chatID: chatID)])
+            try await manager.update(collection: .users, id: receiver.id, object: receiver.addNewChat(chatID: chatID))
+            try await manager.update(collection: .users, id: sender.id, object: sender.addNewChat(chatID: chatID))
         } catch {
             self.errorMessage = "Failed to create chat: \(error.localizedDescription)"
         }
@@ -118,33 +113,21 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
     func listenForMessages() {
         guard let chat = chat else { return }
         
-
         let messagesRef = ref.child("chats").child(chat.id).child("messages")
-        
-
-        let query = messagesRef.queryOrdered(byChild: "timestamp")
-        
-
-        query.observeSingleEvent(of: .value) { snapshot in
-            for child in snapshot.children {
-                if let snap = child as? DataSnapshot,
-                   let message = Message(snapshot: snap) {
-                    chat.addMessage(message: message)
-                    self.messages.append(message)
-                }
-            }
-        }
-        
+        let query = messagesRef.queryOrdered(byChild: "timestamp").queryLimited(toLast: 10)
 
         let addedObserver: DatabaseHandle = query.observe(.childAdded) { snapshot in
             if let newMessage = Message(snapshot: snapshot) {
-                chat.addMessage(message: newMessage)
-                self.messages.append(newMessage)
+
+                DispatchQueue.main.async {
+                    self.messages.append(newMessage)
+                }
             }
         }
         
         observers.append(addedObserver)
     }
+    
 
 
     func removeObservers() {
@@ -183,9 +166,6 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
                     }
                 }
             }
-            
-            chat.addMessage(message: message)
-            self.messages.append(message) 
 
         } catch {
             self.errorMessage = "Failed to send message: \(error.localizedDescription)"
@@ -198,8 +178,6 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
         defer { isLoading = false }
         
         var chatsData: [ChatData] = []
-        
-        var idsToRemove: [String] = []
         
         let path = ref.child("chats")
         
@@ -217,17 +195,7 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
                     print("Failed to create ChatData for chatID: \(chatID)")
                 }
             } catch {
-                idsToRemove.append(chatID)
                 print("Error fetching data for chatID: \(chatID), Error: \(error.localizedDescription)")
-            }
-        }
-        
-        
-        // clear chats create during testing 
-        if let sender, !chatsIDs.isEmpty {
-            let newSender = sender.removeChat(chatID: idsToRemove)
-            _ = await performAsyncOperation { [self] in
-                try await manager.update(collection: .users, id: newSender.id, object: newSender)
             }
         }
         
@@ -236,8 +204,7 @@ class ChatViewModel: ObservableObject, AsyncOperationHandler {
 
     
     func getLastMessage() -> UUID? {
-        guard let chat else { return nil }
-        return chat.messages.last?.id
+        return messages.last?.id
     }
     
     func deleteChat(chatData: ChatData) async {

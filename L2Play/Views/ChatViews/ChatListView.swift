@@ -69,9 +69,11 @@ struct ChatListView: View {
     
     private var chatList: some View {
         ScrollView {
-            ForEach(chats) { chat in
-                ChatRow(authUser: provider.user, chatData: chat) { chatToDelete in
-                    await chatViewModel.deleteChat(chatData: chat)
+            LazyVStack {
+                ForEach(chats) { chat in
+                    ChatRow(authUser: provider.user, chatData: chat) { chatToDelete in
+                        await chatViewModel.deleteChat(chatData: chat)
+                    }
                 }
             }
         }
@@ -81,6 +83,7 @@ struct ChatListView: View {
         // get user chats
         // take only participants and
         // detect who is receiver and return Author in the future take last msg
+        await self.provider.refreshUser(provider.user)
         self.chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats, sender: provider.user)
     }
     

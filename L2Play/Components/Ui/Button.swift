@@ -19,7 +19,7 @@ struct GoogleButton: View {
                     .resizable()
                     .frame(width: 24, height: 24)
                 
-                Text("Continue with Google")
+                Text("Continue with Google".localized())
             }.frame(maxWidth: 300)
                 .padding()
                 .font(.headline)

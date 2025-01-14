@@ -14,7 +14,8 @@
 
 "Continue with Google" = "Kontynuuj z Google";
 
-"Log in" = "Zaloguj się";
+
+"Login" = "Zaloguj się";
 "Join to us!" = "Dołącz do nas!";
 
 
@@ -115,8 +116,8 @@
 
 "How to make valid password?" = "Jak stworzyć silne hasło?";
 
-"At least 1 Big letter." = "Przynajmniej jedna wielka litera";
-"At least 1 Digit." = "Przynajmniej jedna cyfra";
+"At least 1 Big letter" = "Przynajmniej jedna wielka litera";
+"At least 1 Digit" = "Przynajmniej jedna cyfra";
 "Mininum 6 characters" = "Co namniej 6 znaków długości";
 "At least 1 Special Sign" = "Przynajmniej jeden znak specjalny";
 
@@ -127,7 +128,7 @@
 
 
 "Welcome" = "Witaj";
-"back" = "z powrotem";
+"back" = "ponownie";
 
 "Time to get back in the game!" = "Czas wrócić do gry!";
 "Log in to access your account!" = "Zaloguj się, aby uzyskać dostęp do swojego konta!"; // change it

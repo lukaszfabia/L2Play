@@ -30,7 +30,7 @@ struct navigationStack: View {
                                 .resizable()
                                 .frame(width: 40, height: 40)
                             
-                            Text("Continue with Google")
+                            Text("Continue with Google".localized())
                                 .font(.headline)
                                 .foregroundStyle(Color(hex: 0xE3E3E3))
                         }
@@ -39,6 +39,7 @@ struct navigationStack: View {
                     .buttonStyle(CustomButton(
                         buttonColor: Color(hex: 0x131314)
                     ))
+                    .accessibilityLabel("Continue with Google button")
                     
                     
                     NavigationLink(destination: RegisterView()) {
@@ -46,7 +47,7 @@ struct navigationStack: View {
                             Image(systemName: "plus.circle")
                                 .font(.headline)
                             
-                            Text("Join to us!")
+                            Text("Join to us!".localized())
                                 .font(.headline)
                         }
                         .frame(width: w, height: h)
@@ -54,18 +55,20 @@ struct navigationStack: View {
                     .buttonStyle(CustomButton(
                         buttonColor: .accent
                     ))
+                    .accessibilityLabel("Sign Up")
                     
                     NavigationLink(destination: LoginView()) {
                         HStack {
                             Image(systemName: "arrow.right.circle")
                                 .font(.headline)
                             
-                            Text("Login")
+                            Text("Login".localized())
                                 .font(.headline)
                         }
                         .frame(width: w, height: h)
                     }
                     .buttonStyle(CustomButton(outline: true))
+                    .accessibilityLabel("Login")
                 }
             }
             .frame(width: 410, height: 450)
@@ -79,9 +82,9 @@ struct navigationStack: View {
 
 struct NotLoggedMenu: View {
     private let prompts = [
-        NSLocalizedString("PromptsForNotLoggedMenu_0", comment: ""),
-        NSLocalizedString("PromptsForNotLoggedMenu_1", comment: ""),
-        NSLocalizedString("PromptsForNotLoggedMenu_2", comment: ""),
+        "PromptsForNotLoggedMenu_0".localized(),
+        "PromptsForNotLoggedMenu_1".localized(),
+        "PromptsForNotLoggedMenu_2".localized()
     ]
     
     var body: some View {

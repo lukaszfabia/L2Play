@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "108A0704-3B5F-4DEA-AE1C-E83BEF1FD439",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "skippedTests" : [
+        "L2PlayUITests",
+        "L2PlayUITests\/testExample()",
+        "L2PlayUITests\/testLaunchPerformance()",
+        "L2PlayUITestsLaunchTests",
+        "L2PlayUITestsLaunchTests\/testLaunch()",
+        "LoginViewUITests",
+        "LoginViewUITests\/testLoginViewElementsExist()",
+        "LoginViewUITests\/testLoginWithEmptyFields()",
+        "LoginViewUITests\/testLoginWithInvalidData()",
+        "LoginViewUITests\/testNavigateToRegisterView()",
+        "RegisterViewUITests",
+        "RegisterViewUITests\/testLaunchPerformance()",
+        "RegisterViewUITests\/testRegisterViewFieldsInteraction()"
+      ],
+      "target" : {
+        "containerPath" : "container:L2Play.xcodeproj",
+        "identifier" : "F3E3435E2CEFB30D005EF40A",
+        "name" : "L2PlayUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

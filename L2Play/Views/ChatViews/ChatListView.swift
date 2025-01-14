@@ -40,6 +40,7 @@ struct ChatListView: View {
                 }
             }
             .refreshable {
+                await provider.refreshUser(provider.user)
                 await loadChats()
             }
             .sheet(isPresented: $showSearchPpl) {
@@ -83,7 +84,7 @@ struct ChatListView: View {
         // get user chats
         // take only participants and
         // detect who is receiver and return Author in the future take last msg
-        await self.provider.refreshUser(provider.user)
+//        await self.provider.refreshUser(provider.user)
         self.chats = await chatViewModel.fetchChatsData(chatsIDs: provider.user.chats, sender: provider.user)
     }
     

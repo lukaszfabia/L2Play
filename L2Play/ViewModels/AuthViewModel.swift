@@ -100,16 +100,20 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             try await manager.delete(collection: .reviews, whereIs: ("author.id", user.id))
             try await manager.delete(collection: .posts, whereIs: ("author.id", user.id))
             
-            return try await deleteAccountFromFirebase(email: email)
+            user.chats.forEach { id in
+                ref.child("chats").child(id).removeValue()
+            }
+            
+            return try await deleteAccountFromFirebase(id: user.id)
         }
         
     
     }
     
-    private func deleteAccountFromFirebase(email: String) async throws {
+    private func deleteAccountFromFirebase(id: String) async throws {
         if let firebaseUser = Auth.auth().currentUser {
             try await firebaseUser.delete()
-            self.manager.delete(collection: .users, id: email)
+            self.manager.delete(collection: .users, id: id)
             self.user = User.dummy()
             self.isAuthenticated = false
             UserDefaults.standard.removeObject(forKey: "currentUser")

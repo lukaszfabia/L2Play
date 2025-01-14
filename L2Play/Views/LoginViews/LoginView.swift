@@ -7,10 +7,8 @@
 
 import SwiftUI
 
-
 struct LoginView: View {
     @EnvironmentObject var provider: AuthViewModel
-//    @EnvironmentObject var t: TranslatorService
 
     @State private var password: String = ""
     @State private var email: String = ""
@@ -20,20 +18,22 @@ struct LoginView: View {
         return !password.isEmpty && !email.isEmpty
     }
     
-    
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical){
+            ScrollView(.vertical) {
                 VStack(alignment: .center, spacing: 6) {
                     HStack {
-                        GradientText(text: Text("Welcome"), customFontSize: .title)
+                        GradientText(text: Text("Welcome".localized()), customFontSize: .title)
+                            .accessibilityLabel("Welcome Label")
                         
-                        Text("back")
+                        Text("back".localized())
                             .fontWeight(.thin)
                             .font(.title)
+                            .accessibilityLabel("Back Label")
                         
                         Text("👋")
                             .font(.title)
+                            .accessibilityLabel("Hand Emoji")
                     }
                     .padding()
                     
@@ -44,22 +44,24 @@ struct LoginView: View {
                                 .foregroundStyle(.red)
                                 .multilineTextAlignment(.center)
                                 .padding()
+                                .accessibilityLabel("Error Message: \(err)")
                         }
                     }
                     
-                    
                     VStack {
-                        Text("Time to get back in the game!")
+                        Text("Time to get back in the game!".localized())
                             .fontWeight(.bold)
                             .foregroundStyle(.gray)
-                        Text("Log in to access your account!")
+                            .accessibilityLabel("Prompt0")
+                        
+                        Text("Log in to access your account!".localized())
                             .foregroundStyle(.gray)
+                            .accessibilityLabel("Prompt1")
                     }
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.center)
                     .padding()
-                    
                     
                     VStack {
                         Section {
@@ -67,43 +69,48 @@ struct LoginView: View {
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
+                                .accessibilityLabel("Email address")
                             
                             CustomFieldWithIcon(acc: $password, placeholder: "", icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
+                                .accessibilityLabel("Password")
                         }
                         .padding()
                         
                         HStack {
                             NavigationLink(destination: ForgotPasswordView()) {
-                                Text("Forgot password?")
+                                Text("Forgot password?".localized())
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
-                            }.disabled(true)
+                                    .accessibilityLabel("Forgot password link")
+                            }
                             
                             Spacer()
                             
                             NavigationLink(destination: RegisterView()) {
-                                Text("Don't have an account?")
+                                Text("Don't have an account?".localized())
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
+                                    .accessibilityLabel("Don't have an account link")
                             }
-                        }.padding()
+                        }
+                        .padding()
                         
-                        
-                        VStack{
+                        VStack {
                             Button(action: login) {
                                 HStack {
                                     if provider.isLoading {
                                         LoadingView()
+                                            .accessibilityLabel("Loading spinner")
                                     } else {
                                         Image(systemName: "arrow.right")
                                             .frame(width: 24, height: 24)
                                         
-                                        Text("Sign In")
+                                        Text("Sign In".localized())
                                             .font(.headline)
                                     }
                                 }
@@ -113,43 +120,44 @@ struct LoginView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(40)
                                 .disabled(!isFormValid)
+                                .accessibilityLabel("Sign in button")
                             }
 
+                            CustomDivider(text: Text("or".localized()))
+                                .accessibilityLabel("Or Divider")
                             
-                            CustomDivider(text: Text("or"))
-                            
-                            GoogleButton{
+                            GoogleButton {
                                 provider.continueWithGoogle(presenting: getRootViewController())
                             }
-                            
+                            .accessibilityLabel("Continue with Google button")
                         }
                     }
                     .cornerRadius(20)
                     
                     Spacer()
                     
-                    VStack{
-                        Text("By signing in, you agree to our Terms of Service and Privacy Policy.")
+                    VStack {
+                        Text("By signing in, you agree to our Terms of Service and Privacy Policy.".localized())
                             .font(.footnote)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                             .padding()
+                            .accessibilityLabel("Terms and Privacy Policy Agreement")
                     }
                 }
                 .padding()
-                .navigationTitle("Login")
+                .navigationTitle("Login".localized())
                 .navigationDestination(isPresented: $isAuth) {
                     MainView()
                 }
+                .accessibilityLabel("Login")
             }
         }
     }
     
     private func login() {
         provider.login(email: email, password: password)
-        
         isAuth = provider.isAuthenticated
-        
         isAuth ? HapticManager.shared.generateSuccessFeedback() : HapticManager.shared.generateSuccessFeedback()
     }
 }

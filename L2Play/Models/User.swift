@@ -177,6 +177,6 @@ class User: Codable, Identifiable, Hashable {
     // MARK: - Dummy User
     static func dummy() -> User {
         let url = URL(string: "https://placebeard.it/250/250")!
-        return User(id: "asb", firstName: "guest", lastName: "g", email: "guest@example.com", avatar: url)
+        return User(id: "asb", firstName: "joe", lastName: "doe", email: "joe.doe@example.com", avatar: url)
     }
 }

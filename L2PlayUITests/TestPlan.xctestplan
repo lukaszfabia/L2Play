@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "108A0704-3B5F-4DEA-AE1C-E83BEF1FD439",
+      "id" : "7A69634E-CD14-4CBD-B801-FE55640BAFDC",
       "name" : "Configuration 1",
       "options" : {
 
@@ -19,12 +19,6 @@
         "L2PlayUITests\/testLaunchPerformance()",
         "L2PlayUITestsLaunchTests",
         "L2PlayUITestsLaunchTests\/testLaunch()",
-        "LoginViewUITests",
-        "LoginViewUITests\/testLoginViewElementsExist()",
-        "LoginViewUITests\/testLoginWithEmptyFields()",
-        "LoginViewUITests\/testLoginWithInvalidData()",
-        "LoginViewUITests\/testNavigateToRegisterView()",
-        "RegisterViewUITests",
         "RegisterViewUITests\/testLaunchPerformance()",
         "RegisterViewUITests\/testRegisterViewFieldsInteraction()"
       ],

@@ -21,7 +21,9 @@ struct AccordionView: View {
                             Image(systemName: "circle.fill")
                                 .resizable()
                                 .frame(width: 5, height:5)
-                            Text(elem)
+                            Text(elem.localized())
+                                .accessibilityLabel(Text(elem))
+                                .accessibilityIdentifier("requirement-\(elem)")
                             Spacer()
                         }
                     }.listStyle(PlainListStyle())

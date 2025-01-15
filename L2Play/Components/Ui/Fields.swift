@@ -45,6 +45,7 @@ private struct CustomSecureField: View {
                     Image(systemName: self.showPassword ? "eye.slash.fill" : "eye.fill")
                         .padding()
                 })
+                .accessibilityIdentifier("eye")
                 .onChange(of: focused, initial: false) { oldValue, newValue in
                     if newValue == .secure && oldValue == .unSecure {
                         keepInternalPassword = true

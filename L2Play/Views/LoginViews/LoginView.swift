@@ -15,7 +15,9 @@ struct LoginView: View {
     @State private var isAuth: Bool = false
         
     var isFormValid: Bool {
-        return !password.isEmpty && !email.isEmpty
+        let valid = !password.isEmpty && !email.isEmpty
+        print("Form valid: \(valid)")
+        return valid
     }
     
     var body: some View {
@@ -24,16 +26,16 @@ struct LoginView: View {
                 VStack(alignment: .center, spacing: 6) {
                     HStack {
                         GradientText(text: Text("Welcome".localized()), customFontSize: .title)
-                            .accessibilityLabel("Welcome Label")
+                            .accessibilityIdentifier("Welcome Label")
                         
                         Text("back".localized())
                             .fontWeight(.thin)
                             .font(.title)
-                            .accessibilityLabel("Back Label")
+                            .accessibilityIdentifier("Back Label")
                         
                         Text("👋")
                             .font(.title)
-                            .accessibilityLabel("Hand Emoji")
+                            .accessibilityIdentifier("Hand Emoji")
                     }
                     .padding()
                     
@@ -44,7 +46,7 @@ struct LoginView: View {
                                 .foregroundStyle(.red)
                                 .multilineTextAlignment(.center)
                                 .padding()
-                                .accessibilityLabel("Error Message: \(err)")
+                                .accessibilityIdentifier("errorMsg")
                         }
                     }
                     
@@ -52,11 +54,11 @@ struct LoginView: View {
                         Text("Time to get back in the game!".localized())
                             .fontWeight(.bold)
                             .foregroundStyle(.gray)
-                            .accessibilityLabel("Prompt0")
+                            .accessibilityIdentifier("Prompt0")
                         
                         Text("Log in to access your account!".localized())
                             .foregroundStyle(.gray)
-                            .accessibilityLabel("Prompt1")
+                            .accessibilityIdentifier("Prompt1")
                     }
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
@@ -69,13 +71,13 @@ struct LoginView: View {
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
-                                .accessibilityLabel("Email address")
+                                .accessibilityIdentifier("Email address")
                             
                             CustomFieldWithIcon(acc: $password, placeholder: "", icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
-                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("Password")
                         }
                         .padding()
                         
@@ -85,8 +87,9 @@ struct LoginView: View {
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
-                                    .accessibilityLabel("Forgot password link")
+                                  
                             }
+                            .accessibilityIdentifier("Forgot password link")
                             
                             Spacer()
                             
@@ -95,8 +98,9 @@ struct LoginView: View {
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
-                                    .accessibilityLabel("Don't have an account link")
                             }
+                            .accessibilityIdentifier("Don't have an account link")
+                            
                         }
                         .padding()
                         
@@ -105,7 +109,7 @@ struct LoginView: View {
                                 HStack {
                                     if provider.isLoading {
                                         LoadingView()
-                                            .accessibilityLabel("Loading spinner")
+                                            .accessibilityIdentifier("Loading spinner")
                                     } else {
                                         Image(systemName: "arrow.right")
                                             .frame(width: 24, height: 24)
@@ -119,9 +123,10 @@ struct LoginView: View {
                                 .background(!isFormValid ? Color.gray : Color.accentColor)
                                 .foregroundColor(.white)
                                 .cornerRadius(40)
-                                .disabled(!isFormValid)
-                                .accessibilityLabel("Sign in button")
+                               
                             }
+                            .disabled(!isFormValid)
+                            .accessibilityIdentifier("signInButton")
 
                             CustomDivider(text: Text("or".localized()))
                                 .accessibilityLabel("Or Divider")
@@ -129,7 +134,7 @@ struct LoginView: View {
                             GoogleButton {
                                 provider.continueWithGoogle(presenting: getRootViewController())
                             }
-                            .accessibilityLabel("Continue with Google button")
+                            .accessibilityIdentifier("Continue with Google button")
                         }
                     }
                     .cornerRadius(20)
@@ -142,7 +147,7 @@ struct LoginView: View {
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                             .padding()
-                            .accessibilityLabel("Terms and Privacy Policy Agreement")
+                            .accessibilityIdentifier("Terms and Privacy Policy Agreement")
                     }
                 }
                 .padding()

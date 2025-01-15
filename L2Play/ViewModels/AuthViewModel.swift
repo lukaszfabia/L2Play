@@ -67,7 +67,6 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
     }
     
     func deleteAccount(email: String) async {
-        // fix add remove from ctx 
         if !AuthValidator.compare(providedEmail: email, currentEmail: user.email) {
             self.errorMessage = "Entered email is not the same as your current email."
             return
@@ -107,20 +106,37 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
             return try await deleteAccountFromFirebase(id: user.id)
         }
         
-    
     }
     
     private func deleteAccountFromFirebase(id: String) async throws {
-        if let firebaseUser = Auth.auth().currentUser {
-            try await firebaseUser.delete()
-            self.manager.delete(collection: .users, id: id)
-            self.user = User.dummy()
-            self.isAuthenticated = false
-            UserDefaults.standard.removeObject(forKey: "currentUser")
-        } else {
+        guard let firebaseUser = Auth.auth().currentUser else {
             throw NSError(domain: "AuthViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "User not found"])
         }
+        
+        do {
+
+            try await firebaseUser.delete()
+            
+            manager.delete(collection: .users, id: id)
+
+            DispatchQueue.main.async {
+                self.user = User.dummy()
+                self.isAuthenticated = false
+                UserDefaults.standard.removeObject(forKey: "currentUser")
+            }
+            
+        } catch let error as NSError {
+
+            if error.code == AuthErrorCode.requiresRecentLogin.rawValue {
+     
+                throw NSError(domain: "AuthViewModel", code: error.code, userInfo: [NSLocalizedDescriptionKey: "Reauthentication required to delete account."])
+            } else {
+
+                throw error
+            }
+        }
     }
+
     
     func login(email: String, password: String) {
         self.isLoading = true
@@ -459,7 +475,6 @@ class AuthViewModel: ObservableObject, AsyncOperationHandler {
         
         return (try? r.get()) ?? []
     }
-    
 }
 
 

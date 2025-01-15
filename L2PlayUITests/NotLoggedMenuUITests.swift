@@ -5,6 +5,7 @@
 //  Created by Lukasz Fabia on 14/01/2025.
 //
 
+@testable import L2Play
 import XCTest
 
 final class NotLoggedMenuUITests: XCTestCase {
@@ -14,6 +15,7 @@ final class NotLoggedMenuUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchEnvironment["UITesting"] = "true"
         let language = "en"
         let locale = Locale(identifier: language)
                 

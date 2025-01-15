@@ -9,17 +9,23 @@ import SwiftUI
 
 @main
 struct L2PlayApp: App {
-    @StateObject private var provider = AuthViewModel()
+    @StateObject private var provider: AuthViewModel
     @StateObject private var accessibility = SettingsHandler()
-    //    @StateObject private var translator = TranslatorService()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    init() {
+        if ProcessInfo.processInfo.environment["UITesting"] == "true" {
+            _provider = StateObject(wrappedValue: MockAuthViewModel())
+        } else {
+            _provider = StateObject(wrappedValue: AuthViewModel())
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
             if provider.isLoading {
                 LoadingView()
-            }
-            else {
+            } else {
                 MainView()
                     .environmentObject(provider)
                     .environmentObject(accessibility)

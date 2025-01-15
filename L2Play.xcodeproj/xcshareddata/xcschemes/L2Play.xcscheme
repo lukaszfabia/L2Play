@@ -30,7 +30,11 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:L2Play/Views/LoginViews/LukaszTestPlan.xctestplan">
+            reference = "container:L2Play/Views/LoginViews/LukaszTestPlan.xctestplan"
+            default = "YES">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:L2PlayUITests/TestPlan.xctestplan">
          </TestPlanReference>
       </TestPlans>
       <Testables>

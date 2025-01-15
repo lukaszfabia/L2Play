@@ -11,10 +11,10 @@ struct RegisterView: View {
     @State private var isAuth : Bool = false
     
     private let details: [String] = [
-        "At least 1 Big letter".localized(),
-        "At least 1 Digit".localized(),
-        "Minimum 6 characters".localized(),
-        "At least 1 Special Sign".localized(),
+        "At least 1 Big letter",
+        "At least 1 Digit",
+        "Minimum 6 characters",
+        "At least 1 Special Sign",
     ]
     
     var isFormValid: Bool {
@@ -29,13 +29,13 @@ struct RegisterView: View {
                         GoogleButton {
                             provider.continueWithGoogle(presenting: getRootViewController())
                         }
-                        .accessibilityLabel(Text("Sign up with Google"))
+                        .accessibilityIdentifier("Sign up with Google")
                         
                         CustomDivider(text: Text("or".localized())).padding()
                         
                         Text("Get Started with Email".localized())
                             .font(.title2.bold())
-                            .accessibilityLabel(Text("Get started with email"))
+                            .accessibilityIdentifier("Get started with Email")
                     }
                     .padding()
                     
@@ -44,35 +44,35 @@ struct RegisterView: View {
                             CustomFieldWithIcon(acc: $firstName, placeholder: "Joe", icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
-                                .accessibilityLabel(Text("First name"))
-                                .accessibilityHint(Text("Enter your first name"))
+                                .accessibilityIdentifier("First name")
+                                .accessibilityHint("Enter your first name")
                             
                             CustomFieldWithIcon(acc: $lastName, placeholder: "Doe", icon: "person", isSecure: false)
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.sentences)
-                                .accessibilityLabel(Text("Last name"))
-                                .accessibilityHint(Text("Enter your last name"))
+                                .accessibilityIdentifier("Last name")
+                                .accessibilityHint("Enter your last name")
                             
                             CustomFieldWithIcon(acc: $email, placeholder: "joe.doe@example.com", icon: "envelope", isSecure: false)
                                 .autocorrectionDisabled()
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
-                                .accessibilityLabel(Text("Email address"))
-                                .accessibilityHint(Text("Enter your email address"))
+                                .accessibilityIdentifier("Email address")
+                                .accessibilityHint("Enter your email address")
                             
                             CustomFieldWithIcon(acc: $password, placeholder: "", icon: "lock", isSecure: true)
                                 .autocorrectionDisabled()
                                 .keyboardType(.alphabet)
                                 .textInputAutocapitalization(.never)
-                                .accessibilityLabel(Text("Password"))
-                                .accessibilityHint(Text("Enter a strong password"))
+                                .accessibilityIdentifier("Password")
+                                .accessibilityHint("Enter a strong password")
                         }
                         .padding(.vertical, 10)
                         .padding(.horizontal, 10)
                         
                         AccordionView(summary: "How to make valid password?".localized(), details: details)
-                            .accessibilityLabel(Text("Password requirements"))
-                            .accessibilityHint(Text("Expand to see password requirements"))
+                            .accessibilityIdentifier("Password requirements")
+                            .accessibilityHint("Expand to see password requirements")
                         
                         HStack {
                             NavigationLink(destination: LoginView()) {
@@ -80,8 +80,8 @@ struct RegisterView: View {
                                     .foregroundStyle(.link)
                                     .fontWeight(.light)
                                     .font(.system(size: 12))
-                                    .accessibilityLabel(Text("Login link"))
-                                    .accessibilityHint(Text("Navigate to login screen"))
+                                    .accessibilityIdentifier("Login link")
+                                    .accessibilityHint("Navigate to login screen")
                             }
                             Spacer()
                         }
@@ -93,7 +93,7 @@ struct RegisterView: View {
                         HStack {
                             if provider.isLoading {
                                 LoadingView()
-                                    .accessibilityLabel(Text("Loading spinner"))
+                                    .accessibilityIdentifier("Loading spinner")
                             } else {
                                 Image(systemName: "arrow.right")
                                     .frame(width: 24, height: 24)
@@ -107,18 +107,17 @@ struct RegisterView: View {
                         .background(!isFormValid ? Color.gray : Color.accentColor)
                         .foregroundColor(.white)
                         .cornerRadius(40)
-                        .disabled(!isFormValid)
-                        .accessibilityLabel(Text("Sign up button"))
-                        .accessibilityHint(Text("Submit the registration form"))
                     }
+                    .accessibilityIdentifier("SubmitButton")
+                    .disabled(!isFormValid)
                     
                     Text("By signing up, you agree to our Terms of Service and Privacy Policy.".localized())
                         .font(.footnote)
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                         .padding(.top, 30)
-                        .accessibilityLabel(Text("Terms and privacy policy agreement"))
-                        .accessibilityHint(Text("You agree to terms and privacy policy by signing up"))
+                        .accessibilityIdentifier("Terms and privacy policy agreement")
+                        .accessibilityHint("You agree to terms and privacy policy by signing up")
                 }
                 .padding()
                 .navigationTitle("Create Account".localized())
